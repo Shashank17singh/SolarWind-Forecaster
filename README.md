@@ -1,6 +1,6 @@
 <div align="center">
 
-#  SolarWind Forecaster
+# SolarWind-Forecaster
 
 **A data science pipeline and LightGBM model for 15-minute forecasting of geomagnetic storm risk using massive NASA/NOAA datasets.**
 
@@ -13,13 +13,13 @@
 
 ---
 
-##  Overview
+## Architecture Overview
 
 Developed as a highly robust Data Science portfolio project, this repository implements a complete machine learning pipeline for predicting severe space weather events (geomagnetic storms). It processes decades of high-resolution solar wind data from NASA and NOAA, builds complex time-series features, trains a LightGBM regressor using out-of-core techniques to handle memory constraints, and visualizes the results via an interactive Streamlit dashboard.
 
 ---
 
-###  Data Science Pipeline
+### Data Science Pipeline
 
 ```mermaid
 graph TD
@@ -54,7 +54,7 @@ graph TD
     class E,H,J logic;
 ```
 
-##  Features
+## Features
 
 | Stage | Description |
 |---|---|
@@ -65,19 +65,21 @@ graph TD
 
 ---
 
-##  Tech Stack
+## Technology Stack
 
-**Machine Learning** - LightGBM · Scikit-Learn · Joblib
-**Data Engineering** - Pandas · PyArrow (Parquet) · NumPy
-**Visualizations** - Matplotlib · Seaborn · Streamlit
-**Automation** - GitHub Actions (CI/CD) · Makefile
+| Component | Technologies |
+|:---|:---|
+| **Machine Learning** | `LightGBM`, `Scikit-Learn`, `Joblib` |
+| **Data Engineering** | `Pandas`, `PyArrow (Parquet)`, `NumPy` |
+| **Visualizations** | `Matplotlib`, `Seaborn`, `Streamlit` |
+| **Automation** | `GitHub Actions (CI/CD)`, `Makefile` |
 
 ---
 
-##  Directory Structure
+## Project Structure
 
 ```
-Space-Weather-Sentinel/
+SolarWind-Forecaster/
 │
 ├── notebooks/                  # Jupyter notebooks for Exploratory Data Analysis and Model Evaluation
 ├── data/                       # Ignored by git; raw API dumps, intermediate CSVs, and Parquet shards
@@ -96,7 +98,7 @@ Space-Weather-Sentinel/
 
 ---
 
-##  Setup and Installation
+## Setup & Execution
 
 ### Prerequisites
 
@@ -106,8 +108,8 @@ Space-Weather-Sentinel/
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/Shashank17singh/Space-Weather-Sentinel.git
-cd Space-Weather-Sentinel
+git clone https://github.com/Shashank17singh/SolarWind-Forecaster.git
+cd SolarWind-Forecaster
 ```
 
 ### 2. Install Dependencies
