@@ -64,8 +64,10 @@ if view_mode == "Data Exploration (EDA)":
 
         st.subheader("Recent Solar Wind Trends")
 
-        recent_df = df.tail(1000).set_index("timestamp")
-        st.line_chart(recent_df[["sym_h", "bz_gsm"]])
+        recent_df = df.tail(1000).reset_index(drop=True if df.index.name != "timestamp" else False)
+        if "timestamp" not in recent_df.columns:
+            recent_df = recent_df.reset_index()
+        st.line_chart(recent_df, x="timestamp", y=["sym_h", "bz_gsm"])
     else:
         st.warning(
             "Data not found. Please run `python src/data_ingestion.py` to generate the dataset."
@@ -99,8 +101,11 @@ elif view_mode == "Forecasting Dashboard":
             st.success("Prediction Complete!")
             st.json(preds)
 
-            if preds.get("storm_risk_prob", 0) > 0.5:
-                st.error("HIGH RISK OF GEOMAGNETIC STORM IN NEXT 15 MINS")
+            sym_h = preds.get("predicted_sym_h", 0)
+            if sym_h <= -100:
+                st.error("HIGH RISK OF INTENSE GEOMAGNETIC STORM IN NEXT 15 MINS")
+            elif sym_h <= -50:
+                st.warning("MODERATE RISK OF GEOMAGNETIC STORM IN NEXT 15 MINS")
             else:
                 st.info("Space weather is currently calm.")
 
