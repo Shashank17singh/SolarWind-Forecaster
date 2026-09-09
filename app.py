@@ -12,7 +12,7 @@ st.set_page_config(page_title="SolarWind Forecaster", layout="wide")
 
 st.title("SolarWind Forecaster: Geomagnetic Storm Forecaster")
 st.markdown("""
-This dashboard visualizes historical solar wind data and simulates our LightGBM forecasting model. 
+This dashboard visualizes historical solar wind data and simulates our Gradient Boosting forecasting model. 
 A **SYM-H** index below -50 nT indicates a moderate geomagnetic storm, and below -100 nT indicates an intense storm.
 """)
 
