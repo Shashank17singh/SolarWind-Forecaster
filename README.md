@@ -81,9 +81,11 @@ graph TD
 ```
 SolarWind-Forecaster/
 │
+├── configs/                    # Configuration files
+├── models_deploy/              # Saved model artifacts and metadata
 ├── notebooks/                  # Jupyter notebooks for Exploratory Data Analysis and Model Evaluation
-├── data/                       # Ignored by git; raw API dumps, intermediate CSVs, and Parquet shards
-├── models/                     # Saved LightGBM artifacts (.joblib)
+├── reports/                    # Generated reports
+├── scripts/                    # Utility scripts
 ├── src/                        # Core Python ML Pipeline
 │   ├── data_ingestion.py       # Download and parse logic
 │   ├── feature_engineering.py  # Rolling windows and temporal feature creation
@@ -91,6 +93,7 @@ SolarWind-Forecaster/
 │   ├── model_training.py       # Out-of-core LightGBM training loop
 │   ├── model_inference.py      # Real-time prediction wrappers
 │   └── experiments/            # Experimental scripts (LSTMs, Drag models)
+├── tests/                      # Unit tests
 ├── app.py                      # Streamlit interactive dashboard
 ├── Makefile                    # Automation shortcuts
 └── README.md                   # You are here
