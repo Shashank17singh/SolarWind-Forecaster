@@ -1,0 +1,37 @@
+{
+  "model": "sat_impact_lgbm",
+  "version": "20260207094145",
+  "train_end": "2023-12-31",
+  "feature_cols": [
+    "bz_gsm", "by_gsm", "flow_speed", "proton_density",
+    "flow_pressure", "electric_field", "plasma_beta",
+    "alfven_mach", "ae", "al", "au", "sym_h", "asy_h",
+    "v_np", "vbz_south", "bz_south", "bz_abs"
+  ],
+  "target_col": "anomaly",
+  "threshold": 0.5,
+  "feature_means": {
+    "bz_gsm": -0.12,
+    "by_gsm": 0.05,
+    "flow_speed": 430.0,
+    "proton_density": 6.5,
+    "flow_pressure": 2.1,
+    "electric_field": -0.05,
+    "plasma_beta": 1.1,
+    "alfven_mach": 8.2,
+    "ae": 145.0,
+    "al": -110.0,
+    "au": 95.0,
+    "sym_h": -8.5,
+    "asy_h": 12.0,
+    "v_np": 2700.0,
+    "vbz_south": -0.3,
+    "bz_south": -0.8,
+    "bz_abs": 3.2
+  },
+  "metrics": {
+    "val_auc": 0.87,
+    "val_f1": 0.72
+  },
+  "notes": "Stub metadata — retrain to replace with real values."
+}

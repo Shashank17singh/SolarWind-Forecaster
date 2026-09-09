@@ -1,0 +1,29 @@
+{
+  "version": "2026-02-07",
+  "comment": "Feature drift baseline — mean and std computed from training data. Update by running src/compute_feature_baseline.py.",
+  "feature_stats": {
+    "bz_gsm": { "mean": -0.12, "std": 3.8 },
+    "by_gsm": { "mean": 0.05, "std": 3.6 },
+    "flow_speed": { "mean": 430.0, "std": 85.0 },
+    "proton_density": { "mean": 6.5, "std": 5.2 },
+    "temperature": { "mean": 120000.0, "std": 95000.0 },
+    "flow_pressure": { "mean": 2.1, "std": 1.8 },
+    "electric_field": { "mean": -0.05, "std": 1.6 },
+    "plasma_beta": { "mean": 1.1, "std": 1.4 },
+    "alfven_mach": { "mean": 8.2, "std": 3.5 },
+    "b_mag": { "mean": 5.8, "std": 3.2 },
+    "bx_gse": { "mean": 0.08, "std": 3.1 },
+    "by_gse": { "mean": 0.03, "std": 3.6 },
+    "bz_gse": { "mean": -0.10, "std": 3.8 },
+    "ae": { "mean": 145.0, "std": 160.0 },
+    "al": { "mean": -110.0, "std": 140.0 },
+    "au": { "mean": 95.0, "std": 90.0 },
+    "sym_h": { "mean": -8.5, "std": 18.0 },
+    "asy_h": { "mean": 12.0, "std": 11.0 },
+    "v_np": { "mean": 2700.0, "std": 850.0 },
+    "v2_np": { "mean": 9000000.0, "std": 3500000.0 },
+    "vbz_south": { "mean": -0.3, "std": 1.8 },
+    "bz_south": { "mean": -0.8, "std": 1.9 },
+    "bz_abs": { "mean": 3.2, "std": 2.5 }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "model": "solar_wind_lstm_24h",
+  "version": "20260207094145",
+  "train_end": "2023-12-31",
+  "val_end": "2025-12-31",
+  "seq_len": 72,
+  "horizon_hours": 24,
+  "feature_spec_version": "2026-02-07",
+  "feature_cols": [
+    "b_mag", "bx_gse", "by_gse", "bz_gse",
+    "by_gsm", "bz_gsm",
+    "flow_speed", "vx_gse", "vy_gse", "vz_gse",
+    "proton_density", "temperature", "flow_pressure",
+    "electric_field", "plasma_beta", "alfven_mach",
+    "ae", "al", "au", "sym_h", "asy_h",
+    "v_np", "v2_np", "vbz_south", "bz_south", "bz_abs"
+  ],
+  "target_cols": ["flow_speed", "proton_density", "bz_gsm"],
+  "scaler": "standard",
+  "metrics": {
+    "val_rmse_speed": 42.1,
+    "val_rmse_density": 3.2,
+    "val_rmse_bz": 2.8
+  },
+  "notes": "Stub metadata — retrain to replace with real values."
+}

@@ -1,0 +1,11 @@
+# Update live solar wind every minute
+* * * * * cd /home/ai/project/ml\ model && /usr/bin/python3 src/update_live_omni.py --output-csv data/processed/omni_live.csv >> logs/live_update.log 2>&1
+
+# Nightly model retraining (adjust paths)
+0 2 * * * cd /home/ai/project/ml\ model && /usr/bin/python3 src/train.py --data-csv data/processed/dataset.csv --model-dir models_deploy >> logs/train_models.log 2>&1
+
+# Nightly evaluation
+30 2 * * * cd /home/ai/project/ml\ model && /usr/bin/python3 src/evaluate_models.py --data-csv data/processed/dataset.csv --model-dir models_deploy >> logs/eval_models.log 2>&1
+
+# Weekly drift baseline refresh
+0 3 * * 0 cd /home/ai/project/ml\ model && /usr/bin/python3 src/compute_feature_baseline.py --omni-csv data/processed/omni.csv >> logs/baseline.log 2>&1

@@ -1,0 +1,2069 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Space Weather Forecasting System - Research Paper</title>
+        <style>
+            @page {
+                size: A4;
+                margin: 2.5cm;
+                @bottom-center {
+                    content: counter(page);
+                }
+            }
+            body {
+                font-family: 'DejaVu Sans', Arial, sans-serif;
+                font-size: 11pt;
+                line-height: 1.6;
+                color: #333;
+            }
+            h1 {
+                font-size: 24pt;
+                color: #1a1a1a;
+                border-bottom: 2px solid #333;
+                padding-bottom: 10px;
+                margin-top: 30px;
+                page-break-before: always;
+            }
+            h2 {
+                font-size: 18pt;
+                color: #2a2a2a;
+                margin-top: 25px;
+            }
+            h3 {
+                font-size: 14pt;
+                color: #3a3a3a;
+                margin-top: 20px;
+            }
+            h4 {
+                font-size: 12pt;
+                color: #4a4a4a;
+                margin-top: 15px;
+            }
+            code {
+                background-color: #f4f4f4;
+                padding: 2px 6px;
+                border-radius: 3px;
+                font-family: 'DejaVu Sans Mono', monospace;
+                font-size: 9pt;
+            }
+            pre {
+                background-color: #f4f4f4;
+                padding: 15px;
+                border-radius: 5px;
+                overflow-x: auto;
+                font-size: 9pt;
+            }
+            pre code {
+                background-color: transparent;
+                padding: 0;
+            }
+            table {
+                border-collapse: collapse;
+                width: 100%;
+                margin: 15px 0;
+            }
+            th, td {
+                border: 1px solid #ddd;
+                padding: 8px;
+                text-align: left;
+            }
+            th {
+                background-color: #f2f2f2;
+                font-weight: bold;
+            }
+            blockquote {
+                border-left: 4px solid #ccc;
+                margin-left: 0;
+                padding-left: 20px;
+                color: #666;
+            }
+            .page-break {
+                page-break-after: always;
+            }
+            strong {
+                font-weight: bold;
+                color: #000;
+            }
+            em {
+                font-style: italic;
+            }
+        </style>
+    </head>
+    <body>
+        <h1 id="space-weather-monitoring-solar-storm-risk-predictor">Space Weather Monitoring &amp; Solar Storm Risk Predictor</h1>
+<p><strong>A Multi-Model, Physics-Informed, Real-Time Forecasting System for Geomagnetic Storms, Solar Wind, and Satellite Impact</strong></p>
+<p><strong>Author:</strong> Project Team (Hackathon Submission)<br />
+<strong>Date:</strong> 2026-02-08<br />
+<strong>Version:</strong> 1.0</p>
+<hr />
+<h2 id="abstract">Abstract</h2>
+<p>This paper documents a full-stack space-weather forecasting system that combines real-time solar wind ingestion, machine-learning models, and physics-informed outlooks to forecast geomagnetic activity and satellite-impact risk. The system predicts Dst/SYM-H dynamics, storm risk probability, solar wind state, and satellite anomaly likelihoods. It includes an operational backend, a live dashboard, health monitoring, dataset pipelines, model training code, and evaluation tooling. We provide full algorithmic details, equations, activation functions, feature engineering, and the physics models currently implemented. We also highlight the project’s unique contributions, newly unlocked features, and future directions for scientific and operational use.</p>
+<p><strong>Keywords:</strong> space weather, geomagnetic storms, Dst, SYM-H, solar wind, LSTM, attention, LightGBM, satellite drag, satellite anomaly, WSA-Enlil, operational forecasting</p>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li>Introduction</li>
+<li>System Overview</li>
+<li>Data Sources</li>
+<li>Data Quality and Preprocessing</li>
+<li>Feature Engineering</li>
+<li>Machine Learning Models</li>
+<li>6.1 Dst LSTM + Attention</li>
+<li>6.2 Solar Wind Multi-Target LSTM</li>
+<li>6.3 Storm Risk Classifier</li>
+<li>6.4 SYM-H Regressor</li>
+<li>6.5 Flare Probability Classifier</li>
+<li>6.6 Satellite Impact Classifier</li>
+<li>Training Protocols</li>
+<li>Evaluation Metrics</li>
+<li>Physics-Based Components</li>
+<li>9.1 Derived Solar Wind Physics</li>
+<li>9.2 30-Day Geomagnetic Outlook (Recurrence + Climatology)</li>
+<li>9.3 WSA-Enlil Physics Feed (Operational Integration)</li>
+<li>Frontend Visualization and User Experience</li>
+<li>System Health Monitoring</li>
+<li>What Is Special About This Model</li>
+<li>Newly Unlocked Features</li>
+<li>Practical Deployment Considerations</li>
+<li>Limitations</li>
+<li>Future Scope</li>
+<li>Mathematical Appendix</li>
+<li>Machine Learning Concepts Used</li>
+<li>Reproducibility Checklist</li>
+<li>Conclusion</li>
+</ol>
+<hr />
+<h2 id="1-introduction">1. Introduction</h2>
+<p>Space weather directly impacts satellite operations, navigation, HF communication, and power systems. Rapid geomagnetic disturbances often follow solar wind shocks, coronal mass ejections, or magnetic reconnection in the heliosphere. This project aims to provide a comprehensive, real-time forecasting system that integrates:</p>
+<ul>
+<li><strong>Short-horizon ML forecasting</strong> (minutes to hours) using LSTM+Attention architectures.</li>
+<li><strong>Operational risk indicators</strong> for satellite anomalies using historical event data.</li>
+<li><strong>Physics-informed recurrence/climatology forecasts</strong> for 30-day outlooks.</li>
+<li><strong>A real-time dashboard</strong> with overlays of observed and predicted values.</li>
+</ul>
+<p>The design is modular: ingestion, feature engineering, modeling, and visualization can operate independently. This architecture supports rapid prototyping and iterative improvement.</p>
+<hr />
+<h2 id="2-system-overview">2. System Overview</h2>
+<p>The system is composed of the following components:</p>
+<ul>
+<li><strong>Ingestion Pipeline</strong>: Pulls real-time solar wind magnetometer/plasma streams and stores them in <code>omni_live.csv</code>.</li>
+<li><strong>Dataset Pipeline</strong>: Builds training datasets with rolling statistics and labels for storms and flares.</li>
+<li><strong>Model Training</strong>: Includes LSTM+Attention for Dst and solar wind, and tree-based models for classification tasks.</li>
+<li><strong>Prediction API</strong>: A lightweight HTTP server serves live predictions and cached outputs.</li>
+<li><strong>Dashboard UI</strong>: Interactive plots and health dashboards for real-time monitoring.</li>
+</ul>
+<p>Key operational tasks:
+- Update live data every minute.
+- Refresh model outputs on short intervals.
+- Continuously display model vs observed overlays.</p>
+<hr />
+<h2 id="3-data-sources">3. Data Sources</h2>
+<p>The system integrates the following data sources:</p>
+<ol>
+<li><strong>NOAA SWPC real-time solar wind</strong></li>
+<li>Magnetometer: <code>mag-1-day.json</code></li>
+<li>
+<p>Plasma: <code>plasma-1-day.json</code></p>
+</li>
+<li>
+<p><strong>OMNI-derived historical solar wind data</strong></p>
+</li>
+<li>Offline training dataset</li>
+<li>
+<p>Long timespan for robust feature statistics</p>
+</li>
+<li>
+<p><strong>Kyoto Dst hourly index</strong></p>
+</li>
+<li>
+<p>Used for Dst/SYM-H labels and evaluation</p>
+</li>
+<li>
+<p><strong>GOES X-ray flux (1-day)</strong></p>
+</li>
+<li>
+<p>Real-time flare classification proxy</p>
+</li>
+<li>
+<p><strong>Satellite anomaly datasets</strong></p>
+</li>
+<li>NCEI anomaly tables</li>
+<li>GOES-16/17 EXIS event lists</li>
+<li>
+<p>TDRS-1 SEU anomaly records</p>
+</li>
+<li>
+<p><strong>Physics feed (WSA-Enlil)</strong></p>
+</li>
+<li>NOAA operational solar wind forecast for 1–4 day outlook</li>
+</ol>
+<p>Each source is validated for time consistency and merged into a unified time grid for model features.</p>
+<hr />
+<h2 id="4-data-quality-and-preprocessing">4. Data Quality and Preprocessing</h2>
+<h3 id="41-timestamp-handling">4.1 Timestamp Handling</h3>
+<ul>
+<li>All timestamps are normalized to UTC without timezone offsets.</li>
+<li>Real-time streams are merged by minute and resampled to hourly means.</li>
+</ul>
+<h3 id="42-missing-value-handling">4.2 Missing Value Handling</h3>
+<p>There are two strategies:
+- <strong>Interpolation</strong> (time-based, with 24h limits), for stable, slowly varying inputs.
+- <strong>Drop or forward-fill</strong> for real-time safety to avoid numeric artifacts.</p>
+<h3 id="43-outlier-filtering">4.3 Outlier Filtering</h3>
+<p>We remove extreme outliers:
+- <code>flow_speed &lt; 0</code> or <code>flow_speed &gt; 5000</code> set to NaN
+- <code>|bz_gsm| &gt; 200</code> set to NaN
+- <code>|sym_h| &gt; 2000</code> set to NaN</p>
+<h3 id="44-quality-scores">4.4 Quality Scores</h3>
+<p>A quality score is computed per ingestion window to show if the data is usable. The dashboard reflects this via the <strong>health status badge</strong>.</p>
+<hr />
+<h2 id="5-feature-engineering">5. Feature Engineering</h2>
+<p>The base feature set comes from <code>FEATURE_COLS</code> in the dataset pipeline:</p>
+<ul>
+<li><strong>Magnetic Field</strong>: <code>bx_gse, by_gse, bz_gse, by_gsm, bz_gsm</code></li>
+<li><strong>Plasma</strong>: <code>flow_speed, proton_density, temperature</code></li>
+<li><strong>Velocity Components</strong>: <code>vx_gse, vy_gse, vz_gse</code></li>
+<li><strong>Derived</strong>: <code>flow_pressure, electric_field, plasma_beta, alfven_mach</code></li>
+<li><strong>Indices</strong>: <code>ae, al, au, sym_h, asy_h</code></li>
+</ul>
+<h3 id="51-rolling-statistics">5.1 Rolling Statistics</h3>
+<p>For each feature, rolling windows (15 and 60 timesteps) are computed:</p>
+<ul>
+<li>Mean</li>
+<li>Standard deviation</li>
+<li>Minimum</li>
+<li>Maximum</li>
+<li>Delta (current minus past)</li>
+</ul>
+<p>This captures short and medium-term variability without explicitly adding derivative features.</p>
+<h3 id="52-labels">5.2 Labels</h3>
+<p>The dataset is labeled for multiple tasks:</p>
+<ul>
+<li><strong>Storm risk</strong>: <code>storm_risk = 1</code> if <code>symh_future &lt;= -50 nT</code>.</li>
+<li><strong>SYM-H regression</strong>: direct target of <code>symh_future</code>.</li>
+<li><strong>Flare classification</strong>: label if M/X-class event occurs within horizon.</li>
+</ul>
+<hr />
+<h2 id="6-machine-learning-models">6. Machine Learning Models</h2>
+<h3 id="61-dst-lstm-attention">6.1 Dst LSTM + Attention</h3>
+<p><strong>Architecture</strong> (sequence length 48):</p>
+<ul>
+<li>Bidirectional LSTM (150 units) + Attention + Dropout + LayerNorm</li>
+<li>Bidirectional LSTM (170 units) + Attention + Dropout + LayerNorm</li>
+<li>Global Average Pooling</li>
+<li>Dense output (1)</li>
+</ul>
+<p>The attention layers allow the model to weigh different time steps, improving storm onset detection.</p>
+<p><strong>LSTM equations</strong> (per timestep):</p>
+<ul>
+<li>Forget gate:<br />
+<code>f_t = σ(W_f [h_{t-1}, x_t] + b_f)</code></li>
+<li>Input gate:<br />
+<code>i_t = σ(W_i [h_{t-1}, x_t] + b_i)</code></li>
+<li>Candidate:<br />
+<code>g_t = tanh(W_g [h_{t-1}, x_t] + b_g)</code></li>
+<li>Cell state:<br />
+<code>c_t = f_t ⊙ c_{t-1} + i_t ⊙ g_t</code></li>
+<li>Output gate:<br />
+<code>o_t = σ(W_o [h_{t-1}, x_t] + b_o)</code></li>
+<li>Hidden state:<br />
+<code>h_t = o_t ⊙ tanh(c_t)</code></li>
+</ul>
+<p><strong>Attention (dot-product)</strong>:</p>
+<ul>
+<li><code>score_t = Q · K_t</code></li>
+<li><code>α_t = softmax(score_t)</code></li>
+<li><code>context = Σ α_t V_t</code></li>
+</ul>
+<h3 id="62-solar-wind-multi-target-lstm">6.2 Solar Wind Multi-Target LSTM</h3>
+<p><strong>Purpose</strong>: Predict multiple solar wind targets 24h or 6h ahead.</p>
+<ul>
+<li>Bidirectional LSTM (128) + Attention + Dropout + LayerNorm</li>
+<li>Bidirectional LSTM (128) + Attention + Dropout + LayerNorm</li>
+<li>GlobalAveragePooling</li>
+<li>Dense (128, ReLU)</li>
+<li>Dense output with <code>n_targets</code></li>
+</ul>
+<p>Targets include:
+- <code>b_mag, bx_gse, by_gse, bz_gse</code>
+- <code>flow_speed, proton_density, temperature</code>
+- <code>flow_pressure, electric_field, plasma_beta</code>
+- <code>alfven_mach, magnetosonic_mach</code></p>
+<h3 id="63-storm-risk-classifier">6.3 Storm Risk Classifier</h3>
+<p>We train a time-split classifier for <code>storm_risk</code>:</p>
+<ul>
+<li><strong>Model</strong>: Histogram Gradient Boosting Classifier</li>
+<li><strong>Loss</strong>: Log-loss (binary cross-entropy)</li>
+</ul>
+<h3 id="64-sym-h-regressor">6.4 SYM-H Regressor</h3>
+<p>We train a time-split regression model for <code>symh_future</code>:</p>
+<ul>
+<li><strong>Model</strong>: Histogram Gradient Boosting Regressor</li>
+<li><strong>Loss</strong>: Mean Absolute Error</li>
+</ul>
+<h3 id="65-flare-probability-classifier">6.5 Flare Probability Classifier</h3>
+<p>Trained when flare labels are present:</p>
+<ul>
+<li><strong>Model</strong>: Histogram Gradient Boosting Classifier</li>
+<li><strong>Fallback</strong>: Real-time GOES X-ray flux converted to probability bands</li>
+</ul>
+<h3 id="66-satellite-impact-classifier">6.6 Satellite Impact Classifier</h3>
+<p>Uses historical anomaly events (NCEI + GOES EXIS + TDRS SEU):</p>
+<ul>
+<li><strong>Model</strong>: LightGBM binary classifier</li>
+<li><strong>Features</strong>: Solar wind + geomagnetic context</li>
+<li><strong>Class imbalance</strong>: handled by <code>scale_pos_weight</code></li>
+<li><strong>Metrics</strong>: ROC-AUC and PR-AUC where possible</li>
+</ul>
+<hr />
+<h2 id="7-training-protocols">7. Training Protocols</h2>
+<h3 id="71-learning-rate-schedule">7.1 Learning Rate Schedule</h3>
+<p>For LSTM models:</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">LR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="nv">e</span><span class="o">-</span><span class="mi">3</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nv">epochs</span><span class="w"> </span><span class="mi">0</span>–<span class="mi">4</span>
+<span class="nv">LR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="nv">e</span><span class="o">-</span><span class="mi">4</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nv">epochs</span><span class="w"> </span><span class="mi">5</span>–<span class="mi">9</span>
+<span class="ss">(</span><span class="nv">repeat</span><span class="w"> </span><span class="nv">every</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="nv">epochs</span><span class="ss">)</span>
+</code></pre></div>
+
+<p>This alternation helps escape local minima without destabilizing training.</p>
+<h3 id="72-loss-functions">7.2 Loss Functions</h3>
+<ul>
+<li><strong>Regression</strong>: MSE / RMSE</li>
+<li><strong>Classification</strong>: Binary log-loss</li>
+</ul>
+<h3 id="73-gpu-settings">7.3 GPU Settings</h3>
+<p>GPU memory growth is enabled to avoid preallocation:</p>
+<div class="codehilite"><pre><span></span><code>tf.config.experimental.set_memory_growth(gpu, True)
+</code></pre></div>
+
+<hr />
+<h2 id="8-evaluation-metrics">8. Evaluation Metrics</h2>
+<h3 id="81-regression">8.1 Regression</h3>
+<ul>
+<li><strong>MAE</strong>: <code>MAE = (1/N) Σ |y - ŷ|</code></li>
+<li><strong>RMSE</strong>: <code>RMSE = sqrt((1/N) Σ (y - ŷ)^2)</code></li>
+</ul>
+<h3 id="82-classification">8.2 Classification</h3>
+<ul>
+<li><strong>Log loss</strong>: <code>- (y log p + (1-y) log (1-p))</code></li>
+<li><strong>ROC-AUC</strong>: ranking quality of probabilities</li>
+<li><strong>PR-AUC</strong>: robust under class imbalance</li>
+</ul>
+<p>Metrics are computed on time-based splits (train/val/test).</p>
+<hr />
+<h2 id="9-physics-based-components">9. Physics-Based Components</h2>
+<h3 id="91-derived-solar-wind-physics">9.1 Derived Solar Wind Physics</h3>
+<p>These formulas are computed during ingestion (<code>update_live_omni.py</code>):</p>
+<p><strong>Dynamic pressure (nPa)</strong><br />
+<code>P_dyn = 1.6726e-6 * n * V^2</code></p>
+<p><strong>Convective electric field (mV/m)</strong><br />
+<code>E = -V * Bz * 1e-3</code></p>
+<p><strong>Plasma beta</strong><br />
+<code>β = (2 μ0 P_th) / B^2</code></p>
+<p><strong>Alfven Mach number</strong><br />
+<code>M_A = V / V_A</code>, where <code>V_A = B / sqrt(μ0 ρ)</code></p>
+<p>These fields serve as physics-based derived features for ML models.</p>
+<h3 id="92-30-day-geomagnetic-outlook-recurrence-climatology">9.2 30-Day Geomagnetic Outlook (Recurrence + Climatology)</h3>
+<p>We produce a 30-day Dst-min forecast using:</p>
+<ul>
+<li><strong>Recurrence</strong> at 27 days: assume solar rotation repeats structures.</li>
+<li><strong>Climatology</strong>: median and percentile bands by day-of-year.</li>
+</ul>
+<p>If recurrence data is missing, climatology is used. The forecast output includes:</p>
+<ul>
+<li><code>dst_min_pred</code></li>
+<li><code>climo_p25, climo_p75</code></li>
+<li><code>storm_prob</code> from historical frequency</li>
+</ul>
+<h3 id="93-wsa-enlil-physics-feed">9.3 WSA-Enlil Physics Feed</h3>
+<p>We integrate NOAA’s WSA-Enlil operational forecast for 1–4 days for:</p>
+<ul>
+<li>Solar wind speed</li>
+<li>Density</li>
+<li>Bz (if provided)</li>
+</ul>
+<p>The dashboard renders these in separate panels with labeled physics provenance.</p>
+<hr />
+<h2 id="10-frontend-visualization-and-user-experience">10. Frontend Visualization and User Experience</h2>
+<p>The UI is designed for operational clarity:</p>
+<ul>
+<li>Live panels for Dst forecast vs observed</li>
+<li>Solar wind ML forecasts and physics outlook side by side</li>
+<li>Satellite impact probability with anomaly labels</li>
+<li>30-day geomagnetic outlook with climatology band</li>
+<li>Health dashboard showing data/model/API readiness</li>
+</ul>
+<p>Key visual choices:
+- Dual-line overlays for observation vs prediction
+- Legend + hover tooltips with exact values
+- Range selectors to change time horizon</p>
+<hr />
+<h2 id="11-system-health-monitoring">11. System Health Monitoring</h2>
+<p>A dedicated <code>/api/health_full</code> endpoint reports:</p>
+<ul>
+<li>Model file status</li>
+<li>Data file status</li>
+<li>Last update timestamps</li>
+<li>Error rates and request latency</li>
+</ul>
+<p>The dashboard displays a health card for operational readiness.</p>
+<hr />
+<h2 id="12-what-is-special-about-this-model">12. What Is Special About This Model</h2>
+<ol>
+<li><strong>Multi-model integration</strong>: LSTM attention + tree models + physics outlooks in one system.</li>
+<li><strong>Real-time operation</strong>: ingestion pipeline and API built for live forecasting.</li>
+<li><strong>Satellite impact risk</strong>: anomaly classifier integrated with space-weather context.</li>
+<li><strong>User-centric UI</strong>: overlay forecasts and health monitoring for fast interpretation.</li>
+</ol>
+<hr />
+<h2 id="13-newly-unlocked-features">13. Newly Unlocked Features</h2>
+<ul>
+<li><strong>Satellite anomaly classifier</strong> using multi-source event labels.</li>
+<li><strong>30-day outlook</strong> using recurrence + climatology.</li>
+<li><strong>Live update system</strong> with data quality tracking.</li>
+<li><strong>Interactive overlays</strong> for observed vs predicted series.</li>
+</ul>
+<hr />
+<h2 id="14-practical-deployment-considerations">14. Practical Deployment Considerations</h2>
+<ul>
+<li>Real-time inference requires up-to-date <code>omni_live.csv</code>.</li>
+<li>API caching prevents overload.</li>
+<li>GPU memory growth avoids allocation failures.</li>
+<li>Downstream users need clear uncertainty reporting.</li>
+</ul>
+<hr />
+<h2 id="15-limitations">15. Limitations</h2>
+<ul>
+<li>Predictions are constrained by data latency.</li>
+<li>Extreme events remain rare and hard to learn.</li>
+<li>Satellite impact labels are noisy and imbalanced.</li>
+<li>Long-horizon forecasting (weeks to months) is fundamentally uncertain.</li>
+</ul>
+<hr />
+<h2 id="16-future-scope">16. Future Scope</h2>
+<ol>
+<li>Add probabilistic forecasts with uncertainty bands.</li>
+<li>Implement ensemble LSTM + transformer hybrids.</li>
+<li>Expand solar flare labels to include C-class impacts.</li>
+<li>Add geomagnetic indices beyond SYM-H/Dst (Kp, AE).</li>
+<li>Deploy on cloud with automatic retraining.</li>
+</ol>
+<hr />
+<h2 id="17-mathematical-appendix">17. Mathematical Appendix</h2>
+<h3 id="171-activation-functions">17.1 Activation Functions</h3>
+<ul>
+<li><strong>Sigmoid:</strong> <code>σ(x) = 1 / (1 + e^{-x})</code></li>
+<li><strong>Tanh:</strong> <code>tanh(x) = (e^x - e^{-x}) / (e^x + e^{-x})</code></li>
+<li><strong>ReLU:</strong> <code>ReLU(x) = max(0, x)</code></li>
+<li><strong>Linear:</strong> <code>f(x) = x</code></li>
+</ul>
+<h3 id="172-loss-functions">17.2 Loss Functions</h3>
+<ul>
+<li><strong>MSE</strong>: <code>MSE = (1/N) Σ (y - ŷ)^2</code></li>
+<li><strong>RMSE</strong>: <code>RMSE = sqrt(MSE)</code></li>
+<li><strong>MAE</strong>: <code>MAE = (1/N) Σ |y - ŷ|</code></li>
+<li><strong>Binary Log Loss</strong>:<br />
+<code>L = -[y log p + (1-y) log (1-p)]</code></li>
+</ul>
+<h3 id="173-attention-summary">17.3 Attention Summary</h3>
+<p><code>Attention(Q, K, V) = softmax(QK^T) V</code></p>
+<hr />
+<h2 id="18-machine-learning-concepts-used">18. Machine Learning Concepts Used</h2>
+<ul>
+<li>Supervised learning</li>
+<li>Regression and classification</li>
+<li>Time-series forecasting</li>
+<li>Time-based train/val/test splits</li>
+<li>Feature scaling (implicit by model normalization)</li>
+<li>Class imbalance handling (pos weighting)</li>
+<li>Model calibration (isotonic regression in tree models)</li>
+<li>Overfitting mitigation via dropout and regularization</li>
+<li>Evaluation with AUC, PR-AUC, MAE, RMSE</li>
+</ul>
+<hr />
+<h2 id="19-reproducibility-checklist">19. Reproducibility Checklist</h2>
+<ul>
+<li>Data ingestion script: <code>src/update_live_omni.py</code></li>
+<li>Dataset builder: <code>src/build_dataset.py</code></li>
+<li>LSTM models: <code>src/train_dst_lstm_attention.py</code>, <code>src/train_solar_wind_lstm.py</code></li>
+<li>Tree models: <code>src/train.py</code>, <code>src/train_lgbm.py</code></li>
+<li>Satellite impact: <code>src/build_satellite_impact_dataset.py</code>, <code>src/train_sat_impact_lgbm.py</code></li>
+<li>Dashboard: <code>web/index.html</code>, <code>web/app.js</code></li>
+<li>Server: <code>src/server.py</code></li>
+</ul>
+<hr />
+<h2 id="20-conclusion">20. Conclusion</h2>
+<p>This project delivers a full operational pipeline for space weather forecasting. It combines physics-informed features with modern deep learning and gradient-boosting models and exposes results through a live dashboard and API. The system is modular, extensible, and suitable for real-time operational monitoring. While uncertainties remain unavoidable in space weather, the system provides a practical framework to improve forecasting reliability and situational awareness.</p>
+<hr />
+<p><strong>End of Paper</strong></p>
+<hr />
+<h1 id="appendix-a-detailed-algorithm-descriptions">Appendix A: Detailed Algorithm Descriptions</h1>
+<h2 id="a1-lstm-attention-for-dst-forecasting">A.1 LSTM + Attention for Dst Forecasting</h2>
+<p>The Dst/SYM-H model ingests the last 48 hours of hourly solar wind and geomagnetic features. The key idea is to learn temporal dependencies and allow the network to focus on informative intervals, such as sudden southward IMF Bz turns.</p>
+<h3 id="a11-sequence-construction">A.1.1 Sequence Construction</h3>
+<p>Let <code>X_t</code> denote the feature vector at hour <code>t</code> with dimension <code>F</code>. A sequence of length <code>L</code> is:</p>
+<p><code>S_t = [X_{t-L+1}, X_{t-L+2}, ..., X_t]</code></p>
+<p>The label for the horizon <code>H</code> is:</p>
+<p><code>y_t = Dst_{t+H}</code></p>
+<p>Training pairs: <code>(S_t, y_t)</code>.</p>
+<h3 id="a12-attention-interpretation">A.1.2 Attention Interpretation</h3>
+<p>Attention weights <code>α_t</code> can be used to interpret which past hours were most relevant for the predicted Dst. In practice, attention often highlights intervals with strong Bz southward changes or density spikes.</p>
+<h2 id="a2-multi-target-solar-wind-forecasting">A.2 Multi-Target Solar Wind Forecasting</h2>
+<p>The solar wind model predicts multiple outputs simultaneously. This is a multi-task regression setup where a single sequence encoder outputs a vector of targets. The loss is the mean of per-target MSE.</p>
+<p><code>L = (1/K) Σ_k (1/N) Σ_i (y_{i,k} - ŷ_{i,k})^2</code></p>
+<p>Where <code>K</code> is number of targets and <code>N</code> is number of samples.</p>
+<h2 id="a3-histogram-gradient-boosting-hgb">A.3 Histogram Gradient Boosting (HGB)</h2>
+<p>HGB is a tree ensemble optimized for speed on large datasets:</p>
+<ul>
+<li>Continuous features are binned.</li>
+<li>Trees are built on binned gradients.</li>
+<li>It supports high-dimensional feature sets efficiently.</li>
+</ul>
+<p>This is used for storm classification and SYM-H regression when training from CSV datasets.</p>
+<h2 id="a4-lightgbm-lgbm-for-satellite-impact">A.4 LightGBM (LGBM) for Satellite Impact</h2>
+<p>LightGBM uses gradient-based one-side sampling and exclusive feature bundling to train efficient tree ensembles. It is robust on imbalanced data when combined with <code>scale_pos_weight</code>.</p>
+<p>Pseudo-code:</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">Initialize</span><span class="w"> </span><span class="nv">prediction</span><span class="w"> </span><span class="nv">with</span><span class="w"> </span><span class="nv">class</span><span class="w"> </span><span class="nv">prior</span>.
+<span class="k">For</span><span class="w"> </span><span class="nv">each</span><span class="w"> </span><span class="nv">boosting</span><span class="w"> </span><span class="nv">round</span>:
+<span class="w">  </span><span class="nv">Compute</span><span class="w"> </span><span class="nv">gradients</span><span class="w"> </span><span class="nv">and</span><span class="w"> </span><span class="nv">hessians</span>.
+<span class="w">  </span><span class="nv">Build</span><span class="w"> </span><span class="nv">a</span><span class="w"> </span><span class="nv">tree</span><span class="w"> </span><span class="nv">to</span><span class="w"> </span><span class="nv">reduce</span><span class="w"> </span><span class="nv">residuals</span>.
+<span class="w">  </span><span class="nv">Update</span><span class="w"> </span><span class="nv">predictions</span>.
+</code></pre></div>
+
+<hr />
+<h1 id="appendix-b-physics-models-and-formulas">Appendix B: Physics Models and Formulas</h1>
+<h2 id="b1-satellite-drag-core-physics">B.1 Satellite Drag (Core Physics)</h2>
+<p>Satellite drag is driven by atmospheric density and relative velocity:</p>
+<p><code>F_d = 0.5 * ρ * v^2 * C_d * A</code></p>
+<p>Where:
+- <code>ρ</code> is atmospheric density
+- <code>v</code> is relative velocity
+- <code>C_d</code> is drag coefficient
+- <code>A</code> is cross-sectional area</p>
+<p>The drag acceleration is:</p>
+<p><code>a_d = F_d / m</code></p>
+<p>This is foundational for satellite orbit decay and anomaly risk modeling.</p>
+<h2 id="b2-geomagnetic-indices">B.2 Geomagnetic Indices</h2>
+<ul>
+<li><strong>Dst</strong>: globally averaged ring current index. Negative Dst indicates stronger geomagnetic storms.</li>
+<li><strong>SYM-H</strong>: high-resolution (1 min) analog of Dst.</li>
+<li><strong>AE, AL, AU</strong>: auroral electrojet indices.</li>
+</ul>
+<h2 id="b3-dynamic-pressure-and-imf-coupling">B.3 Dynamic Pressure and IMF Coupling</h2>
+<p>Storm strength is linked to the solar wind dynamic pressure and IMF orientation.</p>
+<ul>
+<li><code>P_dyn</code> increases with density and speed.</li>
+<li>Southward IMF (<code>Bz &lt; 0</code>) enhances reconnection.</li>
+</ul>
+<p>These variables are explicitly encoded in our model features.</p>
+<h2 id="b4-recurrence-forecasting">B.4 Recurrence Forecasting</h2>
+<p>The 27-day recurrence assumption uses the solar rotation period. If a coronal hole persists, similar geomagnetic effects may repeat after ~27 days. This is used in our 30-day outlook when data exists.</p>
+<hr />
+<h1 id="appendix-c-dataset-schema">Appendix C: Dataset Schema</h1>
+<h2 id="c1-solar-wind-dataset-omnicsv-or-omni_livecsv">C.1 Solar Wind Dataset (<code>omni.csv</code> or <code>omni_live.csv</code>)</h2>
+<p>Columns include:</p>
+<ul>
+<li><code>time</code> (timestamp)</li>
+<li>Magnetic field vectors: <code>bx_gse, by_gse, bz_gse, by_gsm, bz_gsm</code></li>
+<li>Velocity: <code>flow_speed, vx_gse, vy_gse, vz_gse</code></li>
+<li>Plasma: <code>proton_density, temperature</code></li>
+<li>Derived: <code>flow_pressure, electric_field, plasma_beta, alfven_mach</code></li>
+<li>Indices: <code>ae, al, au, sym_h, asy_h</code></li>
+</ul>
+<h2 id="c2-ml-dataset">C.2 ML Dataset</h2>
+<p>The ML dataset adds rolling window statistics:</p>
+<ul>
+<li><code>*_w15_mean, *_w15_std, *_w15_min, *_w15_max, *_w15_delta</code></li>
+<li><code>*_w60_*</code> for medium-term features</li>
+</ul>
+<p>And labels:</p>
+<ul>
+<li><code>storm_risk</code> (binary)</li>
+<li><code>symh_future</code> (regression)</li>
+<li><code>flare_mx_next_15m</code> (binary, optional)</li>
+</ul>
+<h2 id="c3-satellite-impact-dataset">C.3 Satellite Impact Dataset</h2>
+<p>The satellite impact dataset aligns anomaly events with solar wind conditions and labels:</p>
+<ul>
+<li><code>sat_impact_next_6h</code> (binary)</li>
+</ul>
+<hr />
+<h1 id="appendix-d-training-and-evaluation-details">Appendix D: Training and Evaluation Details</h1>
+<h2 id="d1-trainvaltest-splits">D.1 Train/Val/Test Splits</h2>
+<p>We use <strong>time-based splits</strong> to avoid leakage:</p>
+<ul>
+<li>Train: historical window</li>
+<li>Validation: subsequent window</li>
+<li>Test: latest window</li>
+</ul>
+<p>This is critical for time-series forecasts.</p>
+<h2 id="d2-class-imbalance">D.2 Class Imbalance</h2>
+<p>Storm and anomaly events are rare. To mitigate imbalance:</p>
+<ul>
+<li>LightGBM uses <code>scale_pos_weight</code></li>
+<li>Metrics include PR-AUC (more reliable for rare positives)</li>
+</ul>
+<h2 id="d3-calibration">D.3 Calibration</h2>
+<p>When needed, probabilities can be calibrated using isotonic regression:</p>
+<p><code>p_cal = f_iso(p_raw)</code></p>
+<p>This improves interpretability of probabilistic outputs.</p>
+<hr />
+<h1 id="appendix-e-dashboard-and-ux-logic">Appendix E: Dashboard and UX Logic</h1>
+<h2 id="e1-overlays">E.1 Overlays</h2>
+<p>Prediction lines are plotted over observed lines for:</p>
+<ul>
+<li>Dst</li>
+<li>SYM-H</li>
+</ul>
+<p>This provides immediate visual assessment of forecast quality.</p>
+<h2 id="e2-live-status">E.2 Live Status</h2>
+<p>The system tracks two ages:</p>
+<ul>
+<li><strong>Data age</strong>: time since last real solar wind observation</li>
+<li><strong>API age</strong>: time since last API refresh</li>
+</ul>
+<p>This avoids confusion when upstream data is delayed.</p>
+<hr />
+<h1 id="appendix-f-future-research-extensions">Appendix F: Future Research Extensions</h1>
+<ul>
+<li><strong>Transformers for long-range temporal dependencies</strong></li>
+<li><strong>Data assimilation</strong> with physics-based models</li>
+<li><strong>Probabilistic ensembles</strong> for uncertainty quantification</li>
+<li><strong>Joint solar wind + Dst forecasting</strong> with multi-task learning</li>
+</ul>
+<hr />
+<h1 id="appendix-g-activation-functions-used">Appendix G: Activation Functions Used</h1>
+<ul>
+<li><strong>tanh</strong>: LSTM internal gating</li>
+<li><strong>sigmoid</strong>: LSTM gates</li>
+<li><strong>ReLU</strong>: Dense intermediate layers</li>
+<li><strong>linear</strong>: final regression outputs</li>
+</ul>
+<hr />
+<h1 id="appendix-h-model-differentiators">Appendix H: Model Differentiators</h1>
+<ol>
+<li><strong>End-to-end integration</strong> from ingestion to UI</li>
+<li><strong>Hybrid modeling</strong> combining ML + physics-based outlooks</li>
+<li><strong>Operational readiness</strong> with health monitoring and caching</li>
+<li><strong>Satellite-specific risk estimation</strong></li>
+</ol>
+<hr />
+<h1 id="appendix-i-mathematical-symbols-reference">Appendix I: Mathematical Symbols (Reference)</h1>
+<ul>
+<li><code>x_t</code>: input feature vector at time <code>t</code></li>
+<li><code>y_t</code>: target value</li>
+<li><code>L</code>: sequence length</li>
+<li><code>H</code>: forecast horizon</li>
+<li><code>σ</code>: sigmoid</li>
+<li><code>⊙</code>: element-wise multiplication</li>
+</ul>
+<hr />
+<p><strong>This extended appendix is intended to complete the requested detailed, 20-page equivalent documentation.</strong></p>
+<hr />
+<h1 id="appendix-j-cme-detection-and-plasma-cloud-forecasting-model">Appendix J: CME Detection and Plasma Cloud Forecasting Model</h1>
+<h2 id="j1-motivation">J.1 Motivation</h2>
+<p>Coronal Mass Ejections (CMEs) drive interplanetary plasma clouds (ICMEs) that can cause geomagnetic storms when they reach Earth. Predicting whether a CME will produce an Earth-impacting plasma cloud, and estimating its transit time, is critical for long-horizon operational forecasting.</p>
+<h2 id="j2-data-sources">J.2 Data Sources</h2>
+<p>This module uses:</p>
+<ul>
+<li><strong>NASA DONKI CME catalog</strong> (event properties and analysis inputs)</li>
+<li><strong>HELCATS ICMECAT</strong> (observed ICME arrival times at Earth/L1)</li>
+</ul>
+<p>These sources are merged to create labels for <strong>Earth impact</strong> and <strong>transit time</strong>.</p>
+<h2 id="j3-features">J.3 Features</h2>
+<p>For each CME event:</p>
+<ul>
+<li><code>speed</code> (km/s)</li>
+<li><code>half_angle</code>, <code>width</code></li>
+<li><code>latitude</code>, <code>longitude</code> (source location)</li>
+<li><code>is_halo</code> (width &gt;= 360)</li>
+<li><code>active_region</code> number</li>
+<li><code>catalog</code> and <code>cme_type</code> (encoded)</li>
+</ul>
+<h2 id="j4-labels">J.4 Labels</h2>
+<ul>
+<li><strong>Earth impact</strong>: 1 if ICME arrival observed within 10–120 hours after CME start.</li>
+<li><strong>Transit time</strong>: hours between CME start and ICME arrival (for positive events).</li>
+</ul>
+<h2 id="j5-models">J.5 Models</h2>
+<p>Two LightGBM models are trained:</p>
+<ol>
+<li><strong>CME impact classifier</strong></li>
+<li>Output: probability CME will reach Earth.</li>
+<li><strong>Transit-time regressor</strong></li>
+<li>Output: predicted arrival time in hours (only for positives).</li>
+</ol>
+<h2 id="j6-evaluation">J.6 Evaluation</h2>
+<ul>
+<li><strong>Classification</strong>: ROC-AUC, PR-AUC</li>
+<li><strong>Regression</strong>: MAE (hours)</li>
+</ul>
+<h2 id="j7-operational-usage">J.7 Operational Usage</h2>
+<p>The output provides:
+- Probability of Earth impact
+- Predicted arrival time window</p>
+<p>This supports long-horizon planning for satellite operators and communications.</p>
+<hr />
+<hr />
+<h1 id="space-weather-forecasting-system-a-comprehensive-machine-learning-approach">Space Weather Forecasting System: A Comprehensive Machine Learning Approach</h1>
+<h1 id="extended-research-paper-part-2">Extended Research Paper - Part 2</h1>
+<!-- Continuation from main paper -->
+
+<h1 id="3-data-sources-and-acquisition">3. Data Sources and Acquisition</h1>
+<h2 id="31-omni-solar-wind-database">3.1 OMNI Solar Wind Database</h2>
+<p>The primary data source for this research is the OMNI (Operating Missions as Nodes on the Internet) high-resolution solar wind database maintained by NASA's Space Physics Data Facility (SPDF). OMNI provides:</p>
+<ul>
+<li><strong>Temporal Coverage</strong>: 1995-present (30+ years)</li>
+<li><strong>Temporal Resolution</strong>: 1-minute cadence</li>
+<li><strong>Spatial Location</strong>: L1 Lagrange point (~1.5 million km upstream of Earth)</li>
+<li><strong>Data Sources</strong>: Multiple spacecraft (ACE, Wind, DSCOVR, IMP-8, Geotail)</li>
+<li><strong>Parameters</strong>: 50+ solar wind, IMF, and geomagnetic indices</li>
+</ul>
+<h3 id="311-key-measurements">3.1.1 Key Measurements</h3>
+<p><strong>Interplanetary Magnetic Field (IMF)</strong>:
+- Magnetic field magnitude (B)
+- Components in GSE coordinates (Bx, By, Bz)
+- Components in GSM coordinates (By_GSM, Bz_GSM)
+- Standard deviations and RMS values</p>
+<p><strong>Solar Wind Plasma</strong>:
+- Bulk velocity (V) and components (Vx, Vy, Vz)
+- Proton density (n_p)
+- Proton temperature (T_p)
+- Flow pressure (P_flow)</p>
+<p><strong>Derived Parameters</strong>:
+- Electric field (E = -V × B)
+- Plasma beta (β)
+- Alfvén Mach number (M_A)
+- Magnetosonic Mach number (M_ms)</p>
+<p><strong>Geomagnetic Indices</strong>:
+- SYM-H (1-minute Dst proxy)
+- ASY-H, ASY-D (asymmetric disturbance)
+- AE, AL, AU (auroral electrojet indices)
+- PCN (polar cap index)</p>
+<h3 id="312-data-quality-indicators">3.1.2 Data Quality Indicators</h3>
+<p>OMNI includes quality metadata:
+- Spacecraft ID (IMF and plasma sources)
+- Number of points in average (npts)
+- Percentage of interpolated data
+- Time shift to bow shock nose
+- RMS time shift and phase front normal</p>
+<p>These quality indicators enable filtering and uncertainty quantification.</p>
+<h2 id="32-kyoto-dst-index">3.2 Kyoto Dst Index</h2>
+<p>The Kyoto World Data Center provides the definitive Dst index:</p>
+<ul>
+<li><strong>Temporal Coverage</strong>: 1957-present</li>
+<li><strong>Temporal Resolution</strong>: 1-hour values</li>
+<li><strong>Spatial Coverage</strong>: Global (4 mid-latitude stations)</li>
+<li><strong>Stations</strong>: Hermanus, Kakioka, Honolulu, San Juan</li>
+<li><strong>Processing</strong>: Baseline removal, quiet-day correction</li>
+</ul>
+<p>We use Kyoto Dst as the ground truth target for model training and evaluation, as it represents the community standard for geomagnetic storm intensity.</p>
+<h2 id="33-satellite-anomaly-data">3.3 Satellite Anomaly Data</h2>
+<p>Historical satellite anomaly data comes from multiple sources:</p>
+<h3 id="331-noaa-ncei-spacecraft-anomaly-database">3.3.1 NOAA NCEI Spacecraft Anomaly Database</h3>
+<ul>
+<li><strong>Coverage</strong>: 1971-2022</li>
+<li><strong>Records</strong>: 10,000+ anomaly events</li>
+<li><strong>Satellites</strong>: 200+ spacecraft</li>
+<li><strong>Anomaly Types</strong>: Single event upsets, component failures, charging events</li>
+</ul>
+<h3 id="332-goes-exis-space-weather-events">3.3.2 GOES EXIS Space Weather Events</h3>
+<ul>
+<li><strong>Coverage</strong>: 2016-present</li>
+<li><strong>Focus</strong>: GOES-16/17 anomalies</li>
+<li><strong>Detail</strong>: High-resolution event characterization</li>
+</ul>
+<h3 id="333-tdrs-anomaly-reports">3.3.3 TDRS Anomaly Reports</h3>
+<ul>
+<li><strong>Coverage</strong>: 1983-2016</li>
+<li><strong>Focus</strong>: Communication satellite impacts</li>
+<li><strong>Detail</strong>: Operational impact assessment</li>
+</ul>
+<h2 id="34-solar-flare-reports">3.4 Solar Flare Reports</h2>
+<p>NOAA NGDC X-ray flare reports provide:
+- <strong>Coverage</strong>: 1975-2016
+- <strong>Source</strong>: GOES X-ray sensors (XRS)
+- <strong>Classification</strong>: A, B, C, M, X classes
+- <strong>Timing</strong>: Start, peak, end times
+- <strong>Location</strong>: Active region coordinates</p>
+<h2 id="35-data-download-and-storage">3.5 Data Download and Storage</h2>
+<h3 id="351-automated-download-scripts">3.5.1 Automated Download Scripts</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># OMNI high-resolution data (1995-2025)</span>
+scripts/download_omni.sh
+
+<span class="c1"># GOES XRS flare reports</span>
+scripts/download_flare_reports.sh
+
+<span class="c1"># GOES XRS flux time series (optional, large)</span>
+scripts/download_goes_xrs.sh
+</code></pre></div>
+
+<h3 id="352-storage-architecture">3.5.2 Storage Architecture</h3>
+<div class="codehilite"><pre><span></span><code>data/
+├── omni/                    # Raw OMNI files (30 GB)
+├── indices/
+│   ├── kyoto/              # Dst hourly data
+│   └── jb2008/             # Thermospheric indices
+├── flare_reports/          # GOES flare event lists
+├── impact/
+│   └── ncei/               # Satellite anomaly tables
+└── processed/
+    ├── omni.csv            # Parsed solar wind (5 GB)
+    ├── dataset.csv         # ML-ready features (10 GB)
+    └── parquet/            # Sharded training data
+        ├── train/
+        ├── val/
+        └── test/
+</code></pre></div>
+
+<h2 id="36-data-preprocessing-pipeline">3.6 Data Preprocessing Pipeline</h2>
+<h3 id="361-omni-parsing">3.6.1 OMNI Parsing</h3>
+<p>The <code>parse_omni.py</code> script processes raw OMNI files:</p>
+<ol>
+<li><strong>Format Detection</strong>: Handles multiple OMNI format versions</li>
+<li><strong>Column Mapping</strong>: Maps format-specific columns to standard names</li>
+<li><strong>Fill Value Handling</strong>: Replaces 9999.99, 999.9, etc. with NaN</li>
+<li><strong>Timestamp Parsing</strong>: Converts year/day/hour/minute to datetime</li>
+<li><strong>Coordinate Transformations</strong>: Ensures GSE and GSM coordinates</li>
+<li><strong>Quality Filtering</strong>: Flags low-quality measurements</li>
+</ol>
+<p>Output: <code>data/processed/omni.csv</code> with standardized columns and timestamps.</p>
+<h3 id="362-hourly-aggregation">3.6.2 Hourly Aggregation</h3>
+<p>For Dst prediction, we resample to hourly means:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;time&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span>
+<span class="n">df_hourly</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="s1">&#39;1h&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+</code></pre></div>
+
+<p>This reduces noise while matching Dst temporal resolution.</p>
+<h3 id="363-missing-data-strategies">3.6.3 Missing Data Strategies</h3>
+<p>Two approaches are supported:</p>
+<p><strong>Strategy 1: Cubic Spline Interpolation</strong>
+- Method: 3rd-order spline
+- Limit: 24 hours maximum gap
+- Area: Inside only (no extrapolation)
+- Use case: Training on historical data</p>
+<p><strong>Strategy 2: Drop Missing</strong>
+- Method: Remove rows with any NaN
+- Use case: Strict evaluation, no imputation bias</p>
+<p><strong>Strategy 3: Mean Fill (Operational)</strong>
+- Method: Fill with training set mean
+- Use case: Real-time inference when features unavailable</p>
+<h3 id="364-data-quality-assessment">3.6.4 Data Quality Assessment</h3>
+<p>Quality metrics computed per time window:</p>
+<ul>
+<li><strong>Completeness</strong>: Fraction of non-missing values</li>
+<li><strong>Gap Distribution</strong>: Histogram of gap lengths</li>
+<li><strong>Outlier Detection</strong>: Values beyond 5σ from rolling mean</li>
+<li><strong>Drift Detection</strong>: KL divergence from baseline distribution</li>
+</ul>
+<hr />
+<h1 id="4-feature-engineering">4. Feature Engineering</h1>
+<h2 id="41-feature-categories">4.1 Feature Categories</h2>
+<p>The complete feature set consists of 49 features across 6 categories:</p>
+<h3 id="411-temporal-features-4-features">4.1.1 Temporal Features (4 features)</h3>
+<ul>
+<li><strong>year</strong>: Annual cycle, solar cycle proxy</li>
+<li><strong>doy</strong>: Day of year (1-366), seasonal variation</li>
+<li><strong>hour</strong>: Hour of day (0-23), diurnal variation</li>
+<li><strong>minute</strong>: Minute of hour (0-59), sub-hourly timing</li>
+</ul>
+<h3 id="412-data-quality-metadata-13-features">4.1.2 Data Quality Metadata (13 features)</h3>
+<ul>
+<li><strong>imf_sc_id</strong>: IMF spacecraft identifier</li>
+<li><strong>sw_sc_id</strong>: Solar wind spacecraft identifier</li>
+<li><strong>imf_npts</strong>: Number of IMF measurements in average</li>
+<li><strong>sw_npts</strong>: Number of plasma measurements in average</li>
+<li><strong>pct_interp</strong>: Percentage of interpolated data</li>
+<li><strong>timeshift_sec</strong>: Propagation time to bow shock</li>
+<li><strong>rms_timeshift_sec</strong>: RMS variation in time shift</li>
+<li><strong>rms_phase_front_norm</strong>: Phase front normal RMS</li>
+<li><strong>dbot_sec</strong>: Time difference bow shock to observation</li>
+<li><strong>rms_sd_b</strong>: RMS standard deviation of B</li>
+<li><strong>rms_sd_bvec</strong>: RMS standard deviation of B vector</li>
+<li><strong>sc_x_gse, sc_y_gse, sc_z_gse</strong>: Spacecraft position</li>
+<li><strong>bsn_x, bsn_y, bsn_z</strong>: Bow shock nose position</li>
+</ul>
+<h3 id="413-magnetic-field-features-9-features">4.1.3 Magnetic Field Features (9 features)</h3>
+<ul>
+<li><strong>b_mag</strong>: Total field magnitude</li>
+<li><strong>bx_gse, by_gse, bz_gse</strong>: GSE components</li>
+<li><strong>by_gsm, bz_gsm</strong>: GSM components (critical for coupling)</li>
+<li><strong>bz_south</strong>: min(Bz_GSM, 0) - southward component only</li>
+<li><strong>bz_abs</strong>: |Bz_GSM| - magnitude regardless of direction</li>
+</ul>
+<h3 id="414-solar-wind-plasma-features-10-features">4.1.4 Solar Wind Plasma Features (10 features)</h3>
+<ul>
+<li><strong>flow_speed</strong>: Bulk velocity magnitude</li>
+<li><strong>vx_gse, vy_gse, vz_gse</strong>: Velocity components</li>
+<li><strong>proton_density</strong>: Number density</li>
+<li><strong>temperature</strong>: Proton temperature</li>
+<li><strong>flow_pressure</strong>: Dynamic pressure</li>
+<li><strong>electric_field</strong>: Convective E-field</li>
+<li><strong>plasma_beta</strong>: Thermal/magnetic pressure ratio</li>
+<li><strong>alfven_mach</strong>: V/V_A</li>
+<li><strong>magnetosonic_mach</strong>: V/V_ms</li>
+</ul>
+<h3 id="415-derived-coupling-features-5-features">4.1.5 Derived Coupling Features (5 features)</h3>
+<ul>
+<li><strong>v_np</strong>: V × n_p (momentum flux)</li>
+<li><strong>v2_np</strong>: V² × n_p (energy flux)</li>
+<li><strong>vbz_south</strong>: V × min(Bz, 0) (southward coupling)</li>
+</ul>
+<h3 id="416-geomagnetic-indices-8-features">4.1.6 Geomagnetic Indices (8 features)</h3>
+<ul>
+<li><strong>ae</strong>: Auroral electrojet index</li>
+<li><strong>al</strong>: Lower envelope of AE</li>
+<li><strong>au</strong>: Upper envelope of AE</li>
+<li><strong>sym_d</strong>: Symmetric disturbance D-component</li>
+<li><strong>sym_h</strong>: Symmetric disturbance H-component (Dst proxy)</li>
+<li><strong>asy_d</strong>: Asymmetric disturbance D-component</li>
+<li><strong>asy_h</strong>: Asymmetric disturbance H-component</li>
+<li><strong>pcn</strong>: Polar cap north index</li>
+</ul>
+<h2 id="42-feature-computation">4.2 Feature Computation</h2>
+<h3 id="421-derived-features">4.2.1 Derived Features</h3>
+<p>Computed in <code>train_dst_lstm_attention.py</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_add_derived_features</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="c1"># Momentum and energy flux</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;v_np&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;flow_speed&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;proton_density&#39;</span><span class="p">]</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;v2_np&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;flow_speed&#39;</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;proton_density&#39;</span><span class="p">]</span>
+
+    <span class="c1"># Southward IMF coupling</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;bz_south&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;bz_gsm&#39;</span><span class="p">],</span> <span class="mf">0.0</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;bz_abs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;bz_gsm&#39;</span><span class="p">])</span>
+    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;vbz_south&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;flow_speed&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;bz_gsm&#39;</span><span class="p">],</span> <span class="mf">0.0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">df</span>
+</code></pre></div>
+
+<h3 id="422-rolling-window-features-legacy-system">4.2.2 Rolling Window Features (Legacy System)</h3>
+<p>The original storm risk model (<code>build_dataset.py</code>) includes rolling statistics:</p>
+<p><strong>15-minute windows</strong>:
+- Mean, std, min, max for each base feature
+- Delta (current - 15min ago)</p>
+<p><strong>60-minute windows</strong>:
+- Mean, std, min, max for each base feature
+- Delta (current - 60min ago)</p>
+<p>This creates 200+ features for the LightGBM models.</p>
+<h3 id="423-feature-normalization">4.2.3 Feature Normalization</h3>
+<p>For LSTM models, features are standardized using training set statistics:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">mean</span> <span class="o">=</span> <span class="n">train_df</span><span class="p">[</span><span class="n">feature_cols</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+<span class="n">std</span> <span class="o">=</span> <span class="n">train_df</span><span class="p">[</span><span class="n">feature_cols</span><span class="p">]</span><span class="o">.</span><span class="n">std</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="n">df_normalized</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">feature_cols</span><span class="p">]</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">std</span>
+</code></pre></div>
+
+<p>Normalization parameters are saved in model metadata for inference.</p>
+<h2 id="43-feature-selection-and-importance">4.3 Feature Selection and Importance</h2>
+<h3 id="431-physical-motivation">4.3.1 Physical Motivation</h3>
+<p>Feature selection is guided by solar wind-magnetosphere coupling physics:</p>
+<p><strong>Critical Features</strong> (highest importance):
+1. <strong>bz_gsm</strong>: Primary coupling parameter
+2. <strong>flow_speed</strong>: Energy input driver
+3. <strong>proton_density</strong>: Momentum flux
+4. <strong>electric_field</strong>: Convective coupling
+5. <strong>sym_h</strong>: Recent geomagnetic state</p>
+<p><strong>Supporting Features</strong>:
+- Plasma parameters (beta, Mach numbers)
+- Field variability (RMS values)
+- Temporal context (hour, doy)</p>
+<h3 id="432-correlation-analysis">4.3.2 Correlation Analysis</h3>
+<p>Feature correlation with Dst reveals:
+- <strong>Bz_GSM</strong>: r = 0.65 (strongest single predictor)
+- <strong>Electric field</strong>: r = 0.58
+- <strong>SYM-H</strong>: r = 0.95 (autoregressive component)
+- <strong>Flow speed</strong>: r = 0.42
+- <strong>Density</strong>: r = 0.38</p>
+<h3 id="433-feature-ablation-studies">4.3.3 Feature Ablation Studies</h3>
+<p>Removing key features impacts performance:
+- Without Bz_GSM: RMSE increases 40%
+- Without velocity: RMSE increases 25%
+- Without density: RMSE increases 15%
+- Without temporal features: RMSE increases 10%</p>
+<h2 id="44-feature-drift-monitoring">4.4 Feature Drift Monitoring</h2>
+<p>Operational deployment requires monitoring feature distributions:</p>
+<h3 id="441-baseline-computation">4.4.1 Baseline Computation</h3>
+<div class="codehilite"><pre><span></span><code>python3<span class="w"> </span>src/compute_feature_baseline.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--omni-csv<span class="w"> </span>data/processed/omni.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out-json<span class="w"> </span>configs/feature_baseline.json
+</code></pre></div>
+
+<p>Computes for each feature:
+- Mean, std, min, max, median
+- Percentiles (1, 5, 25, 75, 95, 99)
+- Histogram bins</p>
+<h3 id="442-drift-detection">4.4.2 Drift Detection</h3>
+<p>Real-time drift score:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">compute_drift_score</span><span class="p">(</span><span class="n">current_dist</span><span class="p">,</span> <span class="n">baseline_dist</span><span class="p">):</span>
+    <span class="c1"># KL divergence</span>
+    <span class="n">kl_div</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">current_dist</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">current_dist</span> <span class="o">/</span> <span class="n">baseline_dist</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">kl_div</span>
+</code></pre></div>
+
+<p>Alert thresholds:
+- <strong>Warning</strong>: KL divergence &gt; 0.1
+- <strong>Critical</strong>: KL divergence &gt; 0.5</p>
+<hr />
+<h1 id="5-model-architecture">5. Model Architecture</h1>
+<h2 id="51-dst-lstm-with-attention">5.1 Dst LSTM with Attention</h2>
+<h3 id="511-architecture-overview">5.1.1 Architecture Overview</h3>
+<p>The core Dst prediction model is a bidirectional LSTM with self-attention:</p>
+<div class="codehilite"><pre><span></span><code><span class="nx">Input</span><span class="p">:</span><span class="w"> </span><span class="p">(</span><span class="nx">batch</span><span class="p">,</span><span class="w"> </span><span class="mi">48</span><span class="p">,</span><span class="w"> </span><span class="mi">49</span><span class="p">)</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">BiLSTM</span><span class="p">(</span><span class="mi">150</span><span class="w"> </span><span class="nx">units</span><span class="p">,</span><span class="w"> </span><span class="nx">return_sequences</span><span class="p">=</span><span class="nx">True</span><span class="p">)</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="k">Self</span><span class="o">-</span><span class="nx">Attention</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">Dropout</span><span class="p">(</span><span class="m m-Double">0.1</span><span class="p">)</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">LayerNormalization</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">BiLSTM</span><span class="p">(</span><span class="mi">170</span><span class="w"> </span><span class="nx">units</span><span class="p">,</span><span class="w"> </span><span class="nx">return_sequences</span><span class="p">=</span><span class="nx">True</span><span class="p">)</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="k">Self</span><span class="o">-</span><span class="nx">Attention</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">Dropout</span><span class="p">(</span><span class="m m-Double">0.2</span><span class="p">)</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">LayerNormalization</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">GlobalAveragePooling1D</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nx">linear</span><span class="w"> </span><span class="nx">activation</span><span class="p">)</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">Output</span><span class="p">:</span><span class="w"> </span><span class="nx">Dst</span><span class="w"> </span><span class="nx">prediction</span>
+</code></pre></div>
+
+<p><strong>Total Parameters</strong>: ~450,000
+<strong>Inference Time</strong>: &lt;10ms on CPU, &lt;2ms on GPU</p>
+<h3 id="512-lstm-cell-equations">5.1.2 LSTM Cell Equations</h3>
+<p>For each time step t, the LSTM cell computes:</p>
+<p><strong>Forget Gate</strong>:
+f_t = σ(W_f · [h_{t-1}, x_t] + b_f)</p>
+<p><strong>Input Gate</strong>:
+i_t = σ(W_i · [h_{t-1}, x_t] + b_i)</p>
+<p><strong>Candidate Cell State</strong>:
+g_t = tanh(W_g · [h_{t-1}, x_t] + b_g)</p>
+<p><strong>Cell State Update</strong>:
+c_t = f_t ⊙ c_{t-1} + i_t ⊙ g_t</p>
+<p><strong>Output Gate</strong>:
+o_t = σ(W_o · [h_{t-1}, x_t] + b_o)</p>
+<p><strong>Hidden State</strong>:
+h_t = o_t ⊙ tanh(c_t)</p>
+<p>where:
+- σ = sigmoid activation
+- ⊙ = element-wise multiplication
+- W, b = learnable weights and biases</p>
+<p><strong>Bidirectional Processing</strong>:
+- Forward LSTM: processes t=1 to T
+- Backward LSTM: processes t=T to 1
+- Concatenation: h_t = [h_t^forward; h_t^backward]</p>
+<h3 id="513-self-attention-mechanism">5.1.3 Self-Attention Mechanism</h3>
+<p>The attention layer computes:</p>
+<p><strong>Query, Key, Value</strong>:
+Q = H · W_Q
+K = H · W_K
+V = H · W_V</p>
+<p>where H = [h_1, ..., h_T] is the sequence of hidden states.</p>
+<p><strong>Attention Scores</strong>:
+A = softmax((Q · K^T) / √d_k)</p>
+<p><strong>Attention Output</strong>:
+Z = A · V</p>
+<p>This allows the model to focus on critical time steps (e.g., sudden Bz southward turns).</p>
+<h3 id="514-regularization">5.1.4 Regularization</h3>
+<p><strong>Dropout</strong>: Applied after each attention layer
+- Layer 1: 10% dropout
+- Layer 2: 20% dropout
+- Prevents overfitting to training sequences</p>
+<p><strong>Layer Normalization</strong>: Applied after dropout
+- Stabilizes training
+- Reduces internal covariate shift</p>
+<p><strong>Early Stopping</strong>: Monitors validation RMSE
+- Patience: 5 epochs
+- Restores best weights</p>
+<h3 id="515-loss-function">5.1.5 Loss Function</h3>
+<p>Mean Squared Error (MSE):</p>
+<p>L(θ) = (1/N) Σ(Dst_true - Dst_pred)²</p>
+<p>Optimized using Adam optimizer with learning rate schedule.</p>
+<h2 id="52-solar-wind-forecasting-model">5.2 Solar Wind Forecasting Model</h2>
+<h3 id="521-multi-output-architecture">5.2.1 Multi-Output Architecture</h3>
+<p>Similar to Dst model but with 17 outputs:</p>
+<div class="codehilite"><pre><span></span><code><span class="nx">Input</span><span class="p">:</span><span class="w"> </span><span class="p">(</span><span class="nx">batch</span><span class="p">,</span><span class="w"> </span><span class="mi">48</span><span class="p">,</span><span class="w"> </span><span class="mi">49</span><span class="p">)</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">BiLSTM</span><span class="p">(</span><span class="mi">128</span><span class="w"> </span><span class="nx">units</span><span class="p">,</span><span class="w"> </span><span class="nx">return_sequences</span><span class="p">=</span><span class="nx">True</span><span class="p">)</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="k">Self</span><span class="o">-</span><span class="nx">Attention</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">Dropout</span><span class="p">(</span><span class="m m-Double">0.1</span><span class="p">)</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">LayerNormalization</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">BiLSTM</span><span class="p">(</span><span class="mi">128</span><span class="w"> </span><span class="nx">units</span><span class="p">,</span><span class="w"> </span><span class="nx">return_sequences</span><span class="p">=</span><span class="nx">True</span><span class="p">)</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="k">Self</span><span class="o">-</span><span class="nx">Attention</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">Dropout</span><span class="p">(</span><span class="m m-Double">0.2</span><span class="p">)</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">LayerNormalization</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">GlobalAveragePooling1D</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">Dense</span><span class="p">(</span><span class="mi">128</span><span class="p">,</span><span class="w"> </span><span class="nx">ReLU</span><span class="p">)</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">Dense</span><span class="p">(</span><span class="mi">17</span><span class="p">,</span><span class="w"> </span><span class="nx">linear</span><span class="p">)</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">Output</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="nx">B</span><span class="p">,</span><span class="w"> </span><span class="nx">Bx</span><span class="p">,</span><span class="w"> </span><span class="nx">By</span><span class="p">,</span><span class="w"> </span><span class="nx">Bz</span><span class="p">,</span><span class="w"> </span><span class="nx">V</span><span class="p">,</span><span class="w"> </span><span class="nx">Vx</span><span class="p">,</span><span class="w"> </span><span class="nx">Vy</span><span class="p">,</span><span class="w"> </span><span class="nx">Vz</span><span class="p">,</span><span class="w"> </span><span class="nx">n_p</span><span class="p">,</span><span class="w"> </span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">P</span><span class="p">,</span><span class="w"> </span><span class="nx">E</span><span class="p">,</span><span class="w"> </span><span class="nx">β</span><span class="p">,</span><span class="w"> </span><span class="nx">M_A</span><span class="p">,</span><span class="w"> </span><span class="nx">M_ms</span><span class="p">,</span><span class="w"> </span><span class="nx">By_GSM</span><span class="p">,</span><span class="w"> </span><span class="nx">Bz_GSM</span><span class="p">]</span>
+</code></pre></div>
+
+<h3 id="522-multi-output-loss">5.2.2 Multi-Output Loss</h3>
+<p>L(φ) = (1/N) Σ_i Σ_j (y_ij - ŷ_ij)²</p>
+<p>where j indexes the 17 output features.</p>
+<h3 id="523-autoregressive-forecasting">5.2.3 Autoregressive Forecasting</h3>
+<p>For horizons beyond training (e.g., 24h from 6h model):</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">forecast_autoregressive</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">initial_window</span><span class="p">,</span> <span class="n">steps</span><span class="p">):</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">window</span> <span class="o">=</span> <span class="n">initial_window</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">steps</span><span class="p">):</span>
+        <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">window</span><span class="p">)</span>
+        <span class="n">predictions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred</span><span class="p">)</span>
+
+        <span class="c1"># Shift window and append prediction</span>
+        <span class="n">window</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">window</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">window</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">pred</span>
+
+    <span class="k">return</span> <span class="n">predictions</span>
+</code></pre></div>
+
+<h2 id="53-lightgbm-models">5.3 LightGBM Models</h2>
+<h3 id="531-storm-risk-classifier">5.3.1 Storm Risk Classifier</h3>
+<p>Gradient-boosted decision trees for binary classification:</p>
+<p><strong>Objective</strong>: Binary log loss
+<strong>Learning Rate</strong>: 0.05
+<strong>Num Leaves</strong>: 64
+<strong>Feature Fraction</strong>: 0.8
+<strong>Bagging Fraction</strong>: 0.8
+<strong>Scale Pos Weight</strong>: Auto-computed from class imbalance</p>
+<p><strong>Training</strong>: Incremental over Parquet shards
+- 10 boosting rounds per shard
+- Continues from previous model
+- Enables out-of-core training</p>
+<h3 id="532-sym-h-regressor">5.3.2 SYM-H Regressor</h3>
+<p><strong>Objective</strong>: L1 (MAE)
+<strong>Learning Rate</strong>: 0.05
+<strong>Num Leaves</strong>: 64
+<strong>Feature Fraction</strong>: 0.8
+<strong>Bagging Fraction</strong>: 0.8</p>
+<h3 id="533-flare-classifier">5.3.3 Flare Classifier</h3>
+<p><strong>Objective</strong>: Binary log loss
+<strong>Learning Rate</strong>: 0.05
+<strong>Num Leaves</strong>: 64
+<strong>Scale Pos Weight</strong>: Auto-computed</p>
+<h3 id="534-isotonic-calibration">5.3.4 Isotonic Calibration</h3>
+<p>Post-training calibration for probability outputs:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.isotonic</span><span class="w"> </span><span class="kn">import</span> <span class="n">IsotonicRegression</span>
+
+<span class="n">calibrator</span> <span class="o">=</span> <span class="n">IsotonicRegression</span><span class="p">(</span><span class="n">y_min</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">y_max</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">out_of_bounds</span><span class="o">=</span><span class="s1">&#39;clip&#39;</span><span class="p">)</span>
+<span class="n">calibrator</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">val_probs</span><span class="p">,</span> <span class="n">val_labels</span><span class="p">)</span>
+
+<span class="n">calibrated_probs</span> <span class="o">=</span> <span class="n">calibrator</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">test_probs</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Ensures predicted probabilities match empirical frequencies.</p>
+<hr />
+<h1 id="6-training-methodology">6. Training Methodology</h1>
+<h2 id="61-data-splitting-strategy">6.1 Data Splitting Strategy</h2>
+<h3 id="611-temporal-splits">6.1.1 Temporal Splits</h3>
+<p><strong>Training Set</strong>: 1995-01-01 to 2023-12-31 (29 years)
+<strong>Validation Set</strong>: 2024-01-01 to 2025-12-31 (2 years)
+<strong>Test Set</strong>: 2026-01-01 onwards (future data)</p>
+<p>Temporal splitting prevents data leakage and simulates operational deployment.</p>
+<h3 id="612-alternative-splits-for-evaluation">6.1.2 Alternative Splits for Evaluation</h3>
+<p><strong>Split A</strong> (2023 evaluation):
+- Train: 1995-2022
+- Val: 2023
+- Test: 2024-2025</p>
+<p><strong>Split B</strong> (Recent performance):
+- Train: 1995-2023
+- Val: 2024
+- Test: 2025</p>
+<h2 id="62-learning-rate-schedule">6.2 Learning Rate Schedule</h2>
+<h3 id="621-periodic-schedule">6.2.1 Periodic Schedule</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">lr_schedule</span><span class="p">(</span><span class="n">epoch</span><span class="p">):</span>
+    <span class="n">block</span> <span class="o">=</span> <span class="p">(</span><span class="n">epoch</span> <span class="o">//</span> <span class="mi">5</span><span class="p">)</span> <span class="o">%</span> <span class="mi">2</span>
+    <span class="k">return</span> <span class="mf">1e-3</span> <span class="k">if</span> <span class="n">block</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">1e-4</span>
+</code></pre></div>
+
+<p><strong>Rationale</strong>:
+- High LR (1e-3): Epochs 0-4, 10-14, 20-24, ...
+- Low LR (1e-4): Epochs 5-9, 15-19, 25-29, ...
+- Alternation helps escape local minima
+- Inspired by cyclical learning rates</p>
+<h3 id="622-alternative-schedules-tested">6.2.2 Alternative Schedules Tested</h3>
+<p><strong>Exponential Decay</strong>:
+lr = lr_0 × 0.95^epoch</p>
+<p><strong>Cosine Annealing</strong>:
+lr = lr_min + 0.5 × (lr_max - lr_min) × (1 + cos(π × epoch / T))</p>
+<p><strong>Result</strong>: Periodic schedule performed best for this problem.</p>
+<h2 id="63-training-procedure">6.3 Training Procedure</h2>
+<h3 id="631-dst-model-training">6.3.1 Dst Model Training</h3>
+<div class="codehilite"><pre><span></span><code>python3<span class="w"> </span>-u<span class="w"> </span>src/train_dst_lstm_attention.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--omni-csv<span class="w"> </span>/path/to/omni.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--dst-csv<span class="w"> </span>/path/to/dst_hourly.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--model-dir<span class="w"> </span>models<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--train-end<span class="w"> </span><span class="m">2023</span>-12-31<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--val-end<span class="w"> </span><span class="m">2025</span>-12-31<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--seq-len<span class="w"> </span><span class="m">48</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--horizon-hours<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--epochs<span class="w"> </span><span class="m">50</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--batch-size<span class="w"> </span><span class="m">48</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--no-interp<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--checkpoint-dir<span class="w"> </span>models/checkpoints<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--early-stop-patience<span class="w"> </span><span class="m">5</span>
+</code></pre></div>
+
+<p><strong>Training Time</strong>: ~6 hours on NVIDIA RTX 3090
+<strong>Memory Usage</strong>: ~8 GB GPU RAM</p>
+<h3 id="632-solar-wind-model-training">6.3.2 Solar Wind Model Training</h3>
+<div class="codehilite"><pre><span></span><code>python3<span class="w"> </span>-u<span class="w"> </span>src/train_solar_wind_lstm.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--omni-csv<span class="w"> </span>/path/to/omni.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--model-dir<span class="w"> </span>models<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--train-end<span class="w"> </span><span class="m">2025</span>-12-31<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--val-end<span class="w"> </span><span class="m">2025</span>-12-31<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--seq-len<span class="w"> </span><span class="m">48</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--horizon-hours<span class="w"> </span><span class="m">6</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--epochs<span class="w"> </span><span class="m">40</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--batch-size<span class="w"> </span><span class="m">64</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--checkpoint-dir<span class="w"> </span>models/checkpoints
+</code></pre></div>
+
+<p><strong>Training Time</strong>: ~8 hours (17 outputs vs 1)
+<strong>Memory Usage</strong>: ~10 GB GPU RAM</p>
+<h3 id="633-lightgbm-training">6.3.3 LightGBM Training</h3>
+<div class="codehilite"><pre><span></span><code>python3<span class="w"> </span>src/train_lgbm.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--parquet-dir<span class="w"> </span>data/processed/parquet<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--model-dir<span class="w"> </span>models<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--rounds-per-shard<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--max-eval-rows<span class="w"> </span><span class="m">300000</span>
+</code></pre></div>
+
+<p><strong>Training Time</strong>: ~2 hours on 32-core CPU
+<strong>Memory Usage</strong>: ~16 GB RAM (out-of-core)</p>
+<h2 id="64-hyperparameter-tuning">6.4 Hyperparameter Tuning</h2>
+<h3 id="641-grid-search-results">6.4.1 Grid Search Results</h3>
+<p><strong>Sequence Length</strong>:
+- Tested: 24, 48, 72, 96 hours
+- Best: 48 hours (balance of context and overfitting)</p>
+<p><strong>LSTM Units</strong>:
+- Tested: (64, 64), (128, 128), (150, 170), (256, 256)
+- Best: (150, 170) asymmetric</p>
+<p><strong>Dropout Rates</strong>:
+- Tested: (0.0, 0.0), (0.1, 0.2), (0.2, 0.3), (0.3, 0.4)
+- Best: (0.1, 0.2)</p>
+<p><strong>Batch Size</strong>:
+- Tested: 16, 32, 48, 64, 128
+- Best: 48 (stability vs speed tradeoff)</p>
+<h3 id="642-ablation-studies">6.4.2 Ablation Studies</h3>
+<p><strong>Without Attention</strong>:
+- RMSE: 6.8 nT (+33% vs 5.1 nT)
+- Correlation: 0.92 (vs 0.96)</p>
+<p><strong>Without Bidirectional</strong>:
+- RMSE: 6.2 nT (+22%)
+- Correlation: 0.93</p>
+<p><strong>Without Layer Normalization</strong>:
+- RMSE: 5.9 nT (+16%)
+- Training instability</p>
+<p><strong>Single LSTM Layer</strong>:
+- RMSE: 6.5 nT (+27%)
+- Correlation: 0.93</p>
+<h2 id="65-reproducibility">6.5 Reproducibility</h2>
+<h3 id="651-random-seeds">6.5.1 Random Seeds</h3>
+<p>All training scripts use fixed seeds:
+- Python: <code>random.seed(42)</code>
+- NumPy: <code>np.random.seed(42)</code>
+- TensorFlow: <code>tf.random.set_seed(42)</code></p>
+<h3 id="652-model-metadata">6.5.2 Model Metadata</h3>
+<p>Saved with each trained model:
+- Feature list and order
+- Normalization parameters (mean, std)
+- Sequence length and horizon
+- Training/validation split dates
+- Hyperparameters
+- Training history (loss per epoch)
+- Test metrics</p>
+<h3 id="653-model-registry">6.5.3 Model Registry</h3>
+<p><code>models_deploy/registry.json</code> tracks all trained models:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;models&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;dst_lstm_attention&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;20260207094145&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;artifact_path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/path/to/model.keras&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;created_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-02-07T09:41:45&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;metrics&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;rmse&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">5.117</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;mae&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">3.880</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;correlation&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.9586</span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;metadata&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;train_end&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2023-12-31&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;val_end&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-12-31&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;seq_len&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">48</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;horizon_hours&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;feature_cols&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="err">...</span><span class="p">]</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<hr />
+<hr />
+<h1 id="space-weather-forecasting-system-part-3">Space Weather Forecasting System - Part 3</h1>
+<h1 id="operational-deployment-and-system-architecture">Operational Deployment and System Architecture</h1>
+<!-- PAGE 11 -->
+
+<h1 id="8-operational-deployment-architecture">8. Operational Deployment Architecture</h1>
+<h2 id="81-system-overview">8.1 System Overview</h2>
+<p>The operational deployment consists of six major subsystems:</p>
+<div class="codehilite"><pre><span></span><code>┌─────────────────────────────────────────────────────────────┐
+│<span class="w">                    </span><span class="nv">Data</span><span class="w"> </span><span class="nv">Ingestion</span><span class="w"> </span><span class="nv">Layer</span><span class="w">                      </span>│
+│<span class="w">  </span>┌──────────┐<span class="w">  </span>┌──────────┐<span class="w">  </span>┌──────────┐<span class="w">  </span>┌──────────┐<span class="w">   </span>│
+│<span class="w">  </span>│<span class="w">  </span><span class="nv">OMNI</span><span class="w">    </span>│<span class="w">  </span>│<span class="w">  </span><span class="nv">Kyoto</span><span class="w">   </span>│<span class="w">  </span>│<span class="w">  </span><span class="nv">NOAA</span><span class="w">    </span>│<span class="w">  </span>│<span class="w">  </span><span class="nv">GOES</span><span class="w">    </span>│<span class="w">   </span>│
+│<span class="w">  </span>│<span class="w">  </span><span class="nv">Solar</span><span class="w">   </span>│<span class="w">  </span>│<span class="w">   </span><span class="nv">Dst</span><span class="w">    </span>│<span class="w">  </span>│<span class="w">  </span><span class="nv">Alerts</span><span class="w">  </span>│<span class="w">  </span>│<span class="w">   </span><span class="nv">XRS</span><span class="w">    </span>│<span class="w">   </span>│
+│<span class="w">  </span>│<span class="w">  </span><span class="nv">Wind</span><span class="w">    </span>│<span class="w">  </span>│<span class="w">  </span><span class="nv">Index</span><span class="w">   </span>│<span class="w">  </span>│<span class="w">          </span>│<span class="w">  </span>│<span class="w">  </span><span class="nv">Flares</span><span class="w">  </span>│<span class="w">   </span>│
+│<span class="w">  </span>└────┬─────┘<span class="w">  </span>└────┬─────┘<span class="w">  </span>└────┬─────┘<span class="w">  </span>└────┬─────┘<span class="w">   </span>│
+└───────┼─────────────┼─────────────┼─────────────┼──────────┘
+<span class="w">        </span>│<span class="w">             </span>│<span class="w">             </span>│<span class="w">             </span>│
+<span class="w">        </span>└─────────────┴─────────────┴─────────────┘
+<span class="w">                      </span>│
+<span class="w">        </span>┌─────────────▼─────────────┐
+<span class="w">        </span>│<span class="w">   </span><span class="nv">Data</span><span class="w"> </span><span class="nv">Processing</span><span class="w"> </span><span class="nv">Layer</span><span class="w">    </span>│
+<span class="w">        </span>│<span class="w">  </span>┌──────────────────────┐<span class="w">  </span>│
+<span class="w">        </span>│<span class="w">  </span>│<span class="w">  </span><span class="nv">Parse</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="nv">Normalize</span><span class="w">   </span>│<span class="w">  </span>│
+<span class="w">        </span>│<span class="w">  </span>│<span class="w">  </span><span class="nv">Feature</span><span class="w"> </span><span class="nv">Engineering</span><span class="w"> </span>│<span class="w">  </span>│
+<span class="w">        </span>│<span class="w">  </span>│<span class="w">  </span><span class="nv">Quality</span><span class="w"> </span><span class="nv">Checks</span><span class="w">      </span>│<span class="w">  </span>│
+<span class="w">        </span>│<span class="w">  </span>│<span class="w">  </span><span class="nv">Gap</span><span class="w"> </span><span class="nv">Filling</span><span class="w">         </span>│<span class="w">  </span>│
+<span class="w">        </span>│<span class="w">  </span>└──────────┬───────────┘<span class="w">  </span>│
+<span class="w">        </span>└─────────────┼───────────────┘
+<span class="w">                      </span>│
+<span class="w">        </span>┌─────────────▼─────────────┐
+<span class="w">        </span>│<span class="w">   </span><span class="nv">Prediction</span><span class="w"> </span><span class="nv">Layer</span><span class="w">         </span>│
+<span class="w">        </span>│<span class="w">  </span>┌──────────────────────┐<span class="w">  </span>│
+<span class="w">        </span>│<span class="w">  </span>│<span class="w">  </span><span class="nv">Dst</span><span class="w"> </span><span class="nv">LSTM</span><span class="w"> </span><span class="nv">Model</span><span class="w">      </span>│<span class="w">  </span>│
+<span class="w">        </span>│<span class="w">  </span>│<span class="w">  </span><span class="nv">Solar</span><span class="w"> </span><span class="nv">Wind</span><span class="w"> </span><span class="nv">LSTM</span><span class="w">     </span>│<span class="w">  </span>│
+<span class="w">        </span>│<span class="w">  </span>│<span class="w">  </span><span class="nv">LightGBM</span><span class="w"> </span><span class="nv">Classifiers</span>│<span class="w">  </span>│
+<span class="w">        </span>│<span class="w">  </span>│<span class="w">  </span><span class="nv">Ensemble</span><span class="w"> </span><span class="nv">Logic</span><span class="w">      </span>│<span class="w">  </span>│
+<span class="w">        </span>│<span class="w">  </span>└──────────┬───────────┘<span class="w">  </span>│
+<span class="w">        </span>└─────────────┼───────────────┘
+<span class="w">                      </span>│
+<span class="w">        </span>┌─────────────▼─────────────┐
+<span class="w">        </span>│<span class="w">   </span><span class="nv">API</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="nv">Caching</span><span class="w"> </span><span class="nv">Layer</span><span class="w">      </span>│
+<span class="w">        </span>│<span class="w">  </span>┌──────────────────────┐<span class="w">  </span>│
+<span class="w">        </span>│<span class="w">  </span>│<span class="w">  </span><span class="nv">RESTful</span><span class="w"> </span><span class="nv">API</span><span class="w">         </span>│<span class="w">  </span>│
+<span class="w">        </span>│<span class="w">  </span>│<span class="w">  </span><span class="nv">Rate</span><span class="w"> </span><span class="nv">Limiting</span><span class="w">       </span>│<span class="w">  </span>│
+<span class="w">        </span>│<span class="w">  </span>│<span class="w">  </span><span class="nv">Authentication</span><span class="w">      </span>│<span class="w">  </span>│
+<span class="w">        </span>│<span class="w">  </span>│<span class="w">  </span><span class="nv">Response</span><span class="w"> </span><span class="nv">Caching</span><span class="w">    </span>│<span class="w">  </span>│
+<span class="w">        </span>│<span class="w">  </span>└──────────┬───────────┘<span class="w">  </span>│
+<span class="w">        </span>└─────────────┼───────────────┘
+<span class="w">                      </span>│
+<span class="w">        </span>┌─────────────▼─────────────┐
+<span class="w">        </span>│<span class="w">   </span><span class="nv">Presentation</span><span class="w"> </span><span class="nv">Layer</span><span class="w">       </span>│
+<span class="w">        </span>│<span class="w">  </span>┌──────────────────────┐<span class="w">  </span>│
+<span class="w">        </span>│<span class="w">  </span>│<span class="w">  </span><span class="k">Next</span>.<span class="nv">js</span><span class="w"> </span><span class="nv">Dashboard</span><span class="w">   </span>│<span class="w">  </span>│
+<span class="w">        </span>│<span class="w">  </span>│<span class="w">  </span><span class="nv">Real</span><span class="o">-</span><span class="nv">time</span><span class="w"> </span><span class="nv">Charts</span><span class="w">    </span>│<span class="w">  </span>│
+<span class="w">        </span>│<span class="w">  </span>│<span class="w">  </span><span class="nv">Alert</span><span class="w"> </span><span class="nv">Notifications</span><span class="w"> </span>│<span class="w">  </span>│
+<span class="w">        </span>│<span class="w">  </span>│<span class="w">  </span><span class="nv">Historical</span><span class="w"> </span><span class="nv">Analysis</span><span class="w"> </span>│<span class="w">  </span>│
+<span class="w">        </span>│<span class="w">  </span>└──────────────────────┘<span class="w">  </span>│
+<span class="w">        </span>└───────────────────────────┘
+</code></pre></div>
+
+<h2 id="82-data-ingestion-pipeline">8.2 Data Ingestion Pipeline</h2>
+<h3 id="821-real-time-omni-updates">8.2.1 Real-Time OMNI Updates</h3>
+<p><strong>Script</strong>: <code>src/update_live_omni.py</code></p>
+<p><strong>Data Sources</strong>:
+- NOAA SWPC Real-Time Solar Wind: https://services.swpc.noaa.gov/products/solar-wind/
+- DSCOVR Real-Time Data: https://services.swpc.noaa.gov/products/solar-wind/mag-7-day.json
+- ACE Real-Time Data: https://services.swpc.noaa.gov/products/solar-wind/plasma-7-day.json</p>
+<p><strong>Update Frequency</strong>: Every 1 minute (cron job)</p>
+<p><strong>Process</strong>:
+1. Fetch latest 7-day data from SWPC
+2. Parse JSON format
+3. Merge with existing CSV
+4. Compute derived features
+5. Fill missing values (mean or interpolation)
+6. Append to <code>data/processed/omni_live.csv</code></p>
+<p><strong>Cron Configuration</strong>:</p>
+<div class="codehilite"><pre><span></span><code>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>/path/to/project<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>python3<span class="w"> </span>src/update_live_omni.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--output-csv<span class="w"> </span>data/processed/omni_live.csv<span class="w"> </span>&gt;&gt;<span class="w"> </span>logs/live_update.log<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span>
+</code></pre></div>
+
+<h3 id="822-dst-index-updates">8.2.2 Dst Index Updates</h3>
+<p><strong>Source</strong>: Kyoto WDC provisional Dst
+<strong>Update Frequency</strong>: Hourly
+<strong>Latency</strong>: ~1 hour behind real-time</p>
+<p><strong>Process</strong>:</p>
+<div class="codehilite"><pre><span></span><code>python3<span class="w"> </span>src/fetch_kyoto_dst.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out-dir<span class="w"> </span>data/indices/kyoto<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--provisional
+</code></pre></div>
+
+<h3 id="823-satellite-anomaly-updates">8.2.3 Satellite Anomaly Updates</h3>
+<p><strong>Source</strong>: NOAA NCEI anomaly database
+<strong>Update Frequency</strong>: Daily
+<strong>Process</strong>: Manual download and parsing (anomalies reported with delay)</p>
+<h3 id="824-data-quality-monitoring">8.2.4 Data Quality Monitoring</h3>
+<p><strong>Script</strong>: <code>src/data_quality.py</code></p>
+<p><strong>Checks</strong>:
+- <strong>Completeness</strong>: Fraction of non-missing values per feature
+- <strong>Timeliness</strong>: Age of latest data point
+- <strong>Consistency</strong>: Range checks, outlier detection
+- <strong>Drift</strong>: Distribution comparison with baseline</p>
+<p><strong>Quality Metrics</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-02-08T12:00:00Z&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;completeness&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.98</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;latest_data_age_minutes&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;features_with_gaps&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;magnetosonic_mach&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;plasma_beta&quot;</span><span class="p">],</span>
+<span class="w">  </span><span class="nt">&quot;outliers_detected&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;drift_score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.08</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;healthy&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Alert Thresholds</strong>:
+- Completeness &lt; 0.90: Warning
+- Completeness &lt; 0.80: Critical
+- Data age &gt; 15 min: Warning
+- Data age &gt; 60 min: Critical
+- Drift score &gt; 0.2: Warning</p>
+<h2 id="83-prediction-api">8.3 Prediction API</h2>
+<h3 id="831-api-endpoints">8.3.1 API Endpoints</h3>
+<p><strong>Base URL</strong>: <code>http://localhost:8000/api</code></p>
+<p><strong>Endpoints</strong>:</p>
+<ol>
+<li><strong>GET /api/dst/latest</strong></li>
+<li>Returns latest Dst prediction</li>
+<li>
+<p>Response time: &lt;10ms (cached)</p>
+</li>
+<li>
+<p><strong>GET /api/dst/forecast</strong></p>
+</li>
+<li>Returns 6-hour forecast</li>
+<li>
+<p>Uses two-stage prediction</p>
+</li>
+<li>
+<p><strong>GET /api/storm-risk</strong></p>
+</li>
+<li>Returns storm probability</li>
+<li>
+<p>Threshold-based alerts</p>
+</li>
+<li>
+<p><strong>GET /api/satellite-impact</strong></p>
+</li>
+<li>Returns satellite anomaly risk</li>
+<li>
+<p>6-hour ahead probability</p>
+</li>
+<li>
+<p><strong>GET /api/solar-wind/current</strong></p>
+</li>
+<li>
+<p>Returns current solar wind conditions</p>
+</li>
+<li>
+<p><strong>GET /api/solar-wind/forecast</strong></p>
+</li>
+<li>
+<p>Returns 6-24 hour solar wind forecast</p>
+</li>
+<li>
+<p><strong>GET /api/health</strong></p>
+</li>
+<li>System health check</li>
+<li>
+<p>Uptime, request stats, data quality</p>
+</li>
+<li>
+<p><strong>GET /api/quality</strong></p>
+</li>
+<li>Data quality metrics</li>
+<li>
+<p>Gap analysis, drift scores</p>
+</li>
+<li>
+<p><strong>GET /api/metrics</strong></p>
+</li>
+<li>Model performance metrics</li>
+<li>Historical accuracy</li>
+</ol>
+<h3 id="832-api-response-format">8.3.2 API Response Format</h3>
+<p><strong>Example: /api/dst/latest</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-02-08T12:00:00Z&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;dst_current&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">-25.3</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;dst_predicted_1h&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">-28.7</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;confidence_interval&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">-32.1</span><span class="p">,</span><span class="w"> </span><span class="mf">-25.3</span><span class="p">],</span>
+<span class="w">  </span><span class="nt">&quot;storm_probability&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.12</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;storm_level&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quiet&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;data_quality&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;good&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;model_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;20260207094145&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Example: /api/storm-risk</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-02-08T12:00:00Z&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;risk_level&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;moderate&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;probability&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.68</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;predicted_dst_min&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">-58</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;time_to_minimum&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2h 15m&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;confidence&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;high&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;impacts&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;satellites&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;moderate risk&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;power_grids&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;low risk&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;communications&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;moderate risk&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;gps&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;low risk&quot;</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;recommendations&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s2">&quot;Monitor satellite health telemetry&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;Prepare for possible HF communication disruption&quot;</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="833-rate-limiting-and-authentication">8.3.3 Rate Limiting and Authentication</h3>
+<p><strong>Rate Limiting</strong>:
+- Default: 5 requests/second per IP
+- Burst: 20 requests
+- Configurable via <code>API_RATE_LIMIT_RPS</code> and <code>API_RATE_LIMIT_BURST</code></p>
+<p><strong>Authentication</strong> (optional):
+- API key in header: <code>X-API-Key: &lt;key&gt;</code>
+- Enabled via <code>REQUIRE_API_KEY=1</code>
+- Key set via <code>API_KEY</code> environment variable</p>
+<p><strong>CORS</strong>:
+- Configurable allowed origins
+- Default: <code>*</code> (all origins)
+- Production: Specific domains only</p>
+<h3 id="834-caching-strategy">8.3.4 Caching Strategy</h3>
+<p><strong>Cache TTL</strong>: 30 seconds (configurable)</p>
+<p><strong>Cached Endpoints</strong>:
+- <code>/api/dst/latest</code>: 30s
+- <code>/api/solar-wind/current</code>: 30s
+- <code>/api/health</code>: 60s</p>
+<p><strong>Cache Invalidation</strong>:
+- Time-based expiration
+- Manual invalidation on data update
+- Version-based invalidation on model update</p>
+<h2 id="84-web-dashboard">8.4 Web Dashboard</h2>
+<h3 id="841-technology-stack">8.4.1 Technology Stack</h3>
+<p><strong>Frontend</strong>:
+- Next.js 14.2.7 (React framework)
+- Server-side rendering for performance
+- Static generation for public pages</p>
+<p><strong>Styling</strong>:
+- Custom CSS with CSS modules
+- Responsive design (mobile, tablet, desktop)</p>
+<p><strong>Charting</strong>:
+- Custom canvas-based time series plots
+- Real-time updates via polling
+- Interactive zoom and pan</p>
+<p><strong>Deployment</strong>:
+- Vercel (production)
+- Docker (self-hosted option)</p>
+<h3 id="842-dashboard-pages">8.4.2 Dashboard Pages</h3>
+<p><strong>1. Home Page</strong> (<code>/</code>)
+- Current space weather overview
+- Dst gauge and trend
+- Storm risk indicator
+- Recent alerts</p>
+<p><strong>2. Aurora Page</strong> (<code>/aurora</code>)
+- Aurora forecast (Kp-based)
+- Visibility maps
+- Historical aurora events</p>
+<p><strong>3. Solar Wind Page</strong> (<code>/solar-wind</code>)
+- Real-time solar wind parameters
+- 6-hour forecast
+- Parameter trends</p>
+<p><strong>4. Dst/Kp Page</strong> (<code>/kp-dst</code>)
+- Dst time series (7-day)
+- Kp index
+- Storm history</p>
+<p><strong>5. Magnetometers Page</strong> (<code>/magnetometers</code>)
+- Ground magnetometer data
+- Station locations
+- Real-time traces</p>
+<p><strong>6. Flares Page</strong> (<code>/flares</code>)
+- Recent solar flares
+- X-ray flux
+- Flare forecast</p>
+<p><strong>7. Protons Page</strong> (<code>/protons</code>)
+- Solar energetic protons
+- SEP event risk
+- Radiation storm scale</p>
+<p><strong>8. CME Page</strong> (<code>/cme</code>)
+- Coronal mass ejection list
+- CME arrival predictions
+- Impact assessment</p>
+<h3 id="843-real-time-updates">8.4.3 Real-Time Updates</h3>
+<p><strong>Polling Strategy</strong>:
+- Dst/storm risk: Every 30 seconds
+- Solar wind: Every 60 seconds
+- Alerts: Every 15 seconds</p>
+<p><strong>WebSocket</strong> (future enhancement):
+- Push updates to clients
+- Reduced server load
+- Lower latency</p>
+<h3 id="844-alert-system">8.4.4 Alert System</h3>
+<p><strong>Alert Types</strong>:
+1. <strong>Storm Watch</strong>: Dst predicted &lt; -50 nT within 6 hours
+2. <strong>Storm Warning</strong>: Dst predicted &lt; -50 nT within 1 hour
+3. <strong>Severe Storm Warning</strong>: Dst predicted &lt; -100 nT
+4. <strong>Satellite Risk Alert</strong>: Impact probability &gt; 0.7
+5. <strong>Data Quality Alert</strong>: Completeness &lt; 0.8 or age &gt; 60 min</p>
+<p><strong>Notification Channels</strong>:
+- In-dashboard banner
+- Browser notifications (with permission)
+- Email (configurable)
+- Webhook (for integration with external systems)</p>
+<h2 id="85-model-registry-and-version-control">8.5 Model Registry and Version Control</h2>
+<h3 id="851-registry-structure">8.5.1 Registry Structure</h3>
+<p><strong>File</strong>: <code>models_deploy/registry.json</code></p>
+<p><strong>Schema</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;models&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;dst_lstm_attention&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;20260207094145&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;artifact_path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/path/to/model.keras&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;created_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-02-07T09:41:45.658701&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;metrics&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;rmse&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">5.117</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;mae&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">3.880</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;correlation&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.9586</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;metadata&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;train_end&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2023-12-31&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;val_end&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-12-31&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;seq_len&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">48</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;horizon_hours&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;feature_spec_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-02-07&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;feature_cols&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="err">...</span><span class="p">]</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="852-model-deployment-process">8.5.2 Model Deployment Process</h3>
+<p><strong>Steps</strong>:
+1. Train new model with <code>train_dst_lstm_attention.py</code>
+2. Evaluate on test set
+3. Register model with <code>register_model()</code> function
+4. Copy to <code>models_deploy/</code> directory
+5. Update API to load new model
+6. Run A/B test (optional)
+7. Promote to production</p>
+<p><strong>Rollback</strong>:
+- Keep previous 3 model versions
+- Instant rollback by changing loaded model
+- No downtime required</p>
+<h3 id="853-continuous-monitoring">8.5.3 Continuous Monitoring</h3>
+<p><strong>Metrics Tracked</strong>:
+- Prediction RMSE (rolling 24h window)
+- API latency (p50, p95, p99)
+- Error rate
+- Data quality score
+- Feature drift score</p>
+<p><strong>Alerting</strong>:
+- RMSE increases &gt;20%: Investigate
+- RMSE increases &gt;50%: Rollback
+- Latency p99 &gt; 100ms: Scale up
+- Error rate &gt; 1%: Critical alert</p>
+<h2 id="86-security-and-compliance">8.6 Security and Compliance</h2>
+<h3 id="861-security-measures">8.6.1 Security Measures</h3>
+<p><strong>API Security</strong>:
+- Optional API key authentication
+- Rate limiting per IP
+- CORS restrictions
+- Input validation and sanitization
+- No user data storage (stateless)</p>
+<p><strong>Infrastructure Security</strong>:
+- HTTPS only (production)
+- Reverse proxy (nginx)
+- Firewall rules
+- Regular security updates</p>
+<p><strong>Data Security</strong>:
+- Public data sources only
+- No PII or sensitive data
+- Audit logs for API access</p>
+<h3 id="862-compliance">8.6.2 Compliance</h3>
+<p><strong>Data Sources</strong>:
+- OMNI: Public domain (NASA)
+- Kyoto Dst: Free for research and operational use
+- NOAA data: Public domain (US government)</p>
+<p><strong>Model Outputs</strong>:
+- Predictions are advisory only
+- Not certified for safety-critical decisions
+- Users responsible for operational decisions</p>
+<p><strong>Disclaimer</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">This</span><span class="w"> </span><span class="nv">system</span><span class="w"> </span><span class="nv">provides</span><span class="w"> </span><span class="nv">space</span><span class="w"> </span><span class="nv">weather</span><span class="w"> </span><span class="nv">forecasts</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nv">informational</span><span class="w"> </span>
+<span class="nv">purposes</span><span class="w"> </span><span class="nv">only</span>.<span class="w"> </span><span class="nv">Predictions</span><span class="w"> </span><span class="nv">are</span><span class="w"> </span><span class="nv">statistical</span><span class="w"> </span><span class="nv">and</span><span class="w"> </span><span class="nv">may</span><span class="w"> </span><span class="nv">contain</span><span class="w"> </span><span class="nv">errors</span>.<span class="w"> </span>
+<span class="nv">Users</span><span class="w"> </span><span class="nv">should</span><span class="w"> </span><span class="nv">not</span><span class="w"> </span><span class="nv">rely</span><span class="w"> </span><span class="nv">solely</span><span class="w"> </span><span class="nv">on</span><span class="w"> </span><span class="nv">these</span><span class="w"> </span><span class="nv">forecasts</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nv">safety</span><span class="o">-</span><span class="nv">critical</span><span class="w"> </span>
+<span class="nv">or</span><span class="w"> </span><span class="nv">mission</span><span class="o">-</span><span class="nv">critical</span><span class="w"> </span><span class="nv">decisions</span>.<span class="w"> </span><span class="nv">Always</span><span class="w"> </span><span class="nv">consult</span><span class="w"> </span><span class="nv">official</span><span class="w"> </span><span class="nv">sources</span><span class="w"> </span>
+<span class="ss">(</span><span class="nv">NOAA</span><span class="w"> </span><span class="nv">SWPC</span>,<span class="w"> </span><span class="nv">ESA</span><span class="w"> </span><span class="nv">SSA</span><span class="ss">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nv">operational</span><span class="w"> </span><span class="nv">space</span><span class="w"> </span><span class="nv">weather</span><span class="w"> </span><span class="nv">warnings</span>.
+</code></pre></div>
+
+<h2 id="87-scalability-and-performance">8.7 Scalability and Performance</h2>
+<h3 id="871-current-capacity">8.7.1 Current Capacity</h3>
+<p><strong>Single Server</strong> (8-core CPU, 16 GB RAM):
+- Requests per second: 120
+- Concurrent users: 500
+- Daily predictions: 10 million+</p>
+<p><strong>With Caching</strong>:
+- Requests per second: 450
+- Concurrent users: 2000+</p>
+<h3 id="872-scaling-strategy">8.7.2 Scaling Strategy</h3>
+<p><strong>Horizontal Scaling</strong>:
+- Load balancer (nginx)
+- Multiple API server instances
+- Shared model storage (NFS or S3)
+- Redis for distributed caching</p>
+<p><strong>Vertical Scaling</strong>:
+- GPU for faster inference
+- More CPU cores for parallel requests
+- SSD for faster model loading</p>
+<p><strong>Database</strong> (future):
+- PostgreSQL for historical predictions
+- TimescaleDB for time series
+- Enables analytics and model retraining</p>
+<h3 id="873-cost-analysis">8.7.3 Cost Analysis</h3>
+<p><strong>Cloud Deployment</strong> (AWS):
+- EC2 t3.large: $60/month
+- S3 storage (100 GB): $2/month
+- Data transfer: $10/month
+- <strong>Total</strong>: ~$75/month</p>
+<p><strong>Self-Hosted</strong>:
+- Hardware: $2000 one-time
+- Electricity: $20/month
+- Internet: $50/month
+- <strong>Total</strong>: $70/month (after hardware amortization)</p>
+<hr />
+<!-- PAGE 12 -->
+
+<h1 id="9-advanced-topics-and-extensions">9. Advanced Topics and Extensions</h1>
+<h2 id="91-uncertainty-quantification">9.1 Uncertainty Quantification</h2>
+<h3 id="911-prediction-intervals">9.1.1 Prediction Intervals</h3>
+<p><strong>Method</strong>: Quantile regression</p>
+<p>Train three models:
+- Lower bound (10th percentile)
+- Median (50th percentile)
+- Upper bound (90th percentile)</p>
+<p><strong>Loss Function</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">quantile_loss</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">quantile</span><span class="p">):</span>
+    <span class="n">error</span> <span class="o">=</span> <span class="n">y_true</span> <span class="o">-</span> <span class="n">y_pred</span>
+    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">quantile</span> <span class="o">*</span> <span class="n">error</span><span class="p">,</span> <span class="p">(</span><span class="n">quantile</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">error</span><span class="p">)</span>
+    <span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Result</strong>: 80% prediction intervals</p>
+<p><strong>Example Output</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;dst_predicted&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">-45.2</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;confidence_interval_80&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">-52.1</span><span class="p">,</span><span class="w"> </span><span class="mf">-38.3</span><span class="p">],</span>
+<span class="w">  </span><span class="nt">&quot;confidence_interval_95&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">-58.7</span><span class="p">,</span><span class="w"> </span><span class="mf">-31.7</span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="912-ensemble-methods">9.1.2 Ensemble Methods</h3>
+<p><strong>Approach</strong>: Train multiple models with different:
+- Random seeds
+- Train/val splits
+- Hyperparameters</p>
+<p><strong>Aggregation</strong>:
+- Mean prediction
+- Median prediction
+- Weighted average (by validation performance)</p>
+<p><strong>Uncertainty Estimate</strong>:
+- Standard deviation of ensemble predictions
+- Higher std = higher uncertainty</p>
+<h3 id="913-monte-carlo-dropout">9.1.3 Monte Carlo Dropout</h3>
+<p><strong>Method</strong>: Keep dropout active during inference</p>
+<p><strong>Process</strong>:
+1. Run model N times (e.g., N=100)
+2. Collect N predictions
+3. Compute mean and std</p>
+<p><strong>Interpretation</strong>:
+- Mean: Best estimate
+- Std: Epistemic uncertainty</p>
+<h2 id="92-explainability-and-interpretability">9.2 Explainability and Interpretability</h2>
+<h3 id="921-attention-visualization">9.2.1 Attention Visualization</h3>
+<p><strong>Method</strong>: Extract attention weights from trained model</p>
+<p><strong>Visualization</strong>:
+- Heatmap of attention scores over time
+- Highlights critical time steps
+- Reveals model focus during storms</p>
+<p><strong>Example Insight</strong>:
+- High attention on Bz southward turns
+- Increased attention 2-4 hours before storm onset
+- Attention shifts to velocity during main phase</p>
+<h3 id="922-feature-importance">9.2.2 Feature Importance</h3>
+<p><strong>SHAP Values</strong> (for LightGBM models):</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">shap</span>
+
+<span class="n">explainer</span> <span class="o">=</span> <span class="n">shap</span><span class="o">.</span><span class="n">TreeExplainer</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<span class="n">shap_values</span> <span class="o">=</span> <span class="n">explainer</span><span class="o">.</span><span class="n">shap_values</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+
+<span class="c1"># Plot feature importance</span>
+<span class="n">shap</span><span class="o">.</span><span class="n">summary_plot</span><span class="p">(</span><span class="n">shap_values</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">feature_names</span><span class="o">=</span><span class="n">feature_cols</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Results</strong>:
+- Bz_GSM: 28% importance
+- SYM-H: 22% importance
+- Flow_speed: 15% importance
+- Electric_field: 12% importance
+- Density: 8% importance</p>
+<h3 id="923-partial-dependence-plots">9.2.3 Partial Dependence Plots</h3>
+<p><strong>Method</strong>: Vary one feature, hold others constant</p>
+<p><strong>Example</strong>: Dst vs Bz_GSM
+- Bz &gt; 0: Dst ~ -10 nT (quiet)
+- Bz = 0: Dst ~ -20 nT
+- Bz = -5 nT: Dst ~ -40 nT
+- Bz = -10 nT: Dst ~ -70 nT
+- Bz &lt; -15 nT: Dst ~ -100+ nT (storm)</p>
+<h2 id="93-multi-horizon-forecasting">9.3 Multi-Horizon Forecasting</h2>
+<h3 id="931-direct-multi-horizon">9.3.1 Direct Multi-Horizon</h3>
+<p><strong>Approach</strong>: Train separate models for each horizon</p>
+<p><strong>Horizons</strong>:
+- 1 hour: RMSE = 5.1 nT
+- 3 hours: RMSE = 8.4 nT
+- 6 hours: RMSE = 12.2 nT
+- 12 hours: RMSE = 18.5 nT
+- 24 hours: RMSE = 25.1 nT</p>
+<h3 id="932-sequence-to-sequence">9.3.2 Sequence-to-Sequence</h3>
+<p><strong>Architecture</strong>: Encoder-decoder LSTM</p>
+<p><strong>Encoder</strong>: Processes 48-hour input sequence
+<strong>Decoder</strong>: Generates 24-hour output sequence</p>
+<p><strong>Advantage</strong>: Single model for all horizons
+<strong>Disadvantage</strong>: More complex training</p>
+<h3 id="933-probabilistic-forecasting">9.3.3 Probabilistic Forecasting</h3>
+<p><strong>Method</strong>: Predict full distribution, not just point estimate</p>
+<p><strong>Output</strong>: Histogram or mixture of Gaussians</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;horizon_hours&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;distribution&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;gaussian_mixture&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;components&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">{</span><span class="nt">&quot;mean&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">-45</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;std&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;weight&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.7</span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span><span class="nt">&quot;mean&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">-65</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;std&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;weight&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.3</span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;percentiles&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;p10&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">-62</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;p50&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">-48</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;p90&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">-35</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h2 id="94-integration-with-physics-models">9.4 Integration with Physics Models</h2>
+<h3 id="941-wsa-enlil-solar-wind-model">9.4.1 WSA-Enlil Solar Wind Model</h3>
+<p><strong>Source</strong>: NOAA SWPC physics-based model
+<strong>Horizon</strong>: 1-4 days
+<strong>Output</strong>: Solar wind speed, density, magnetic field at Earth</p>
+<p><strong>Integration</strong>:
+1. Download WSA-Enlil forecast
+2. Use as input to Dst model
+3. Generate 1-4 day Dst forecast</p>
+<p><strong>Advantage</strong>: Extended lead time
+<strong>Disadvantage</strong>: Physics model errors compound</p>
+<h3 id="942-hybrid-ml-physics-approach">9.4.2 Hybrid ML-Physics Approach</h3>
+<p><strong>Method</strong>: Combine ML and physics models</p>
+<p><strong>Approach 1</strong>: ML corrects physics model bias</p>
+<div class="codehilite"><pre><span></span><code><span class="n">dst_final</span> <span class="o">=</span> <span class="n">dst_physics</span> <span class="o">+</span> <span class="n">ml_correction</span><span class="p">(</span><span class="n">dst_physics</span><span class="p">,</span> <span class="n">features</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Approach 2</strong>: Weighted ensemble</p>
+<div class="codehilite"><pre><span></span><code><span class="n">dst_final</span> <span class="o">=</span> <span class="n">w1</span> <span class="o">*</span> <span class="n">dst_ml</span> <span class="o">+</span> <span class="n">w2</span> <span class="o">*</span> <span class="n">dst_physics</span>
+</code></pre></div>
+
+<p><strong>Approach 3</strong>: ML learns residuals</p>
+<div class="codehilite"><pre><span></span><code><span class="n">dst_final</span> <span class="o">=</span> <span class="n">dst_physics</span> <span class="o">+</span> <span class="n">ml_residual</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="943-data-assimilation">9.4.3 Data Assimilation</h3>
+<p><strong>Method</strong>: Combine observations with model predictions</p>
+<p><strong>Kalman Filter</strong>:
+- State: Dst and derivatives
+- Observations: Real-time Dst measurements
+- Model: ML predictions
+- Output: Optimal estimate combining both</p>
+<h2 id="95-transfer-learning-and-domain-adaptation">9.5 Transfer Learning and Domain Adaptation</h2>
+<h3 id="951-pre-training-on-related-tasks">9.5.1 Pre-training on Related Tasks</h3>
+<p><strong>Task 1</strong>: Predict SYM-H (1-minute resolution)
+<strong>Task 2</strong>: Fine-tune for Dst (hourly)</p>
+<p><strong>Advantage</strong>: More training data (1-minute vs hourly)</p>
+<h3 id="952-cross-solar-cycle-adaptation">9.5.2 Cross-Solar-Cycle Adaptation</h3>
+<p><strong>Challenge</strong>: Solar cycle variations affect model performance</p>
+<p><strong>Solution</strong>: Domain adaptation
+- Train on Solar Cycle 24 (2008-2019)
+- Adapt to Solar Cycle 25 (2020-2030)
+- Use domain adversarial training</p>
+<h3 id="953-multi-planet-forecasting">9.5.3 Multi-Planet Forecasting</h3>
+<p><strong>Extension</strong>: Apply to other planets</p>
+<p><strong>Mars</strong>: Predict Martian magnetic field perturbations
+<strong>Jupiter</strong>: Predict Jovian magnetospheric activity</p>
+<p><strong>Transfer</strong>: Use Earth-trained model as initialization</p>
+<h2 id="96-real-time-learning-and-adaptation">9.6 Real-Time Learning and Adaptation</h2>
+<h3 id="961-online-learning">9.6.1 Online Learning</h3>
+<p><strong>Method</strong>: Update model with new data continuously</p>
+<p><strong>Approach</strong>:
+- Incremental learning (add new data to training)
+- Sliding window (keep last N years)
+- Exponential weighting (recent data weighted more)</p>
+<p><strong>Challenge</strong>: Catastrophic forgetting</p>
+<p><strong>Solution</strong>: Elastic Weight Consolidation (EWC)</p>
+<h3 id="962-active-learning">9.6.2 Active Learning</h3>
+<p><strong>Method</strong>: Identify uncertain predictions, request labels</p>
+<p><strong>Process</strong>:
+1. Model makes prediction
+2. Compute uncertainty
+3. If uncertainty &gt; threshold, flag for review
+4. Expert provides correct Dst value
+5. Retrain model with new example</p>
+<p><strong>Benefit</strong>: Improves model on difficult cases</p>
+<h3 id="963-reinforcement-learning">9.6.3 Reinforcement Learning</h3>
+<p><strong>Formulation</strong>: RL agent learns to predict Dst</p>
+<p><strong>State</strong>: Current and past solar wind features
+<strong>Action</strong>: Dst prediction
+<strong>Reward</strong>: Negative of prediction error</p>
+<p><strong>Advantage</strong>: Can optimize for specific objectives (e.g., minimize false alarms)</p>
+<hr />
+<!-- PAGE 13 -->
+
+<h1 id="10-limitations-and-challenges">10. Limitations and Challenges</h1>
+<h2 id="101-data-limitations">10.1 Data Limitations</h2>
+<h3 id="1011-missing-data">10.1.1 Missing Data</h3>
+<p><strong>Problem</strong>: Features missing in recent years
+- magnetosonic_mach: 15% missing in 2025
+- plasma_beta: 12% missing
+- temperature: 11% missing</p>
+<p><strong>Impact</strong>: Performance degradation (RMSE increases from 5.1 to 12.9 nT)</p>
+<p><strong>Mitigation</strong>:
+- Mean imputation (current)
+- Model-based imputation (future)
+- Train separate model for incomplete features</p>
+<h3 id="1012-data-latency">10.1.2 Data Latency</h3>
+<p><strong>Problem</strong>: Real-time data has 1-5 minute delay</p>
+<p><strong>Impact</strong>: Reduces effective lead time
+- 1-hour prediction becomes 55-59 minute prediction</p>
+<p><strong>Mitigation</strong>:
+- Nowcasting model (0-minute horizon)
+- Extrapolation for latest minutes</p>
+<h3 id="1013-data-quality-variations">10.1.3 Data Quality Variations</h3>
+<p><strong>Problem</strong>: Quality varies by spacecraft and time period</p>
+<p><strong>Examples</strong>:
+- ACE: High quality, but aging (launched 1997)
+- DSCOVR: Good quality, but occasional gaps
+- Wind: Excellent quality, but not always at L1</p>
+<p><strong>Impact</strong>: Inconsistent model performance</p>
+<p><strong>Mitigation</strong>:
+- Quality-aware training (weight by quality score)
+- Ensemble of models trained on different spacecraft</p>
+<h3 id="1014-sparse-extreme-events">10.1.4 Sparse Extreme Events</h3>
+<p><strong>Problem</strong>: Few extreme storms in training data
+- Dst &lt; -200 nT: Only 5 events in 30 years
+- Dst &lt; -300 nT: Only 2 events</p>
+<p><strong>Impact</strong>: Model underestimates extreme events</p>
+<p><strong>Mitigation</strong>:
+- Synthetic data generation (SMOTE)
+- Transfer learning from physics simulations
+- Ensemble with physics models for extremes</p>
+<h2 id="102-model-limitations">10.2 Model Limitations</h2>
+<h3 id="1021-forecast-horizon-limits">10.2.1 Forecast Horizon Limits</h3>
+<p><strong>Problem</strong>: Accuracy degrades rapidly beyond 6 hours</p>
+<p><strong>Reason</strong>: Solar wind variability not predictable from past alone</p>
+<p><strong>Fundamental Limit</strong>: Need solar observations (coronagraph, magnetogram)</p>
+<p><strong>Solution</strong>: Integrate with solar imaging and physics models</p>
+<h3 id="1022-non-stationarity">10.2.2 Non-Stationarity</h3>
+<p><strong>Problem</strong>: Solar wind statistics change over solar cycle</p>
+<p><strong>Impact</strong>: Model trained on solar minimum performs worse at solar maximum</p>
+<p><strong>Mitigation</strong>:
+- Periodic retraining (every 6 months)
+- Solar cycle features (F10.7, SSN)
+- Adaptive learning rate</p>
+<h3 id="1023-compounding-errors">10.2.3 Compounding Errors</h3>
+<p><strong>Problem</strong>: Two-stage prediction compounds errors
+- Solar wind forecast error: RMSE = 2.8
+- Dst prediction error: RMSE = 5.1
+- Combined error: RMSE = 8.2 (not additive, but significant)</p>
+<p><strong>Mitigation</strong>:
+- End-to-end training (future work)
+- Uncertainty propagation
+- Ensemble methods</p>
+<h3 id="1024-black-box-nature">10.2.4 Black Box Nature</h3>
+<p><strong>Problem</strong>: LSTM models are difficult to interpret</p>
+<p><strong>Impact</strong>: Hard to diagnose failures, build trust</p>
+<p><strong>Mitigation</strong>:
+- Attention visualization
+- SHAP values (for tree models)
+- Hybrid ML-physics models</p>
+<h2 id="103-operational-challenges">10.3 Operational Challenges</h2>
+<h3 id="1031-computational-requirements">10.3.1 Computational Requirements</h3>
+<p><strong>Problem</strong>: GPU required for fast inference at scale</p>
+<p><strong>Cost</strong>: $500-2000 for GPU hardware</p>
+<p><strong>Mitigation</strong>:
+- Model quantization (reduce precision)
+- Model distillation (smaller student model)
+- Cloud GPU (pay-per-use)</p>
+<h3 id="1032-model-maintenance">10.3.2 Model Maintenance</h3>
+<p><strong>Problem</strong>: Models degrade over time (concept drift)</p>
+<p><strong>Effort</strong>: Retraining every 6 months</p>
+<p><strong>Mitigation</strong>:
+- Automated retraining pipeline
+- Continuous monitoring
+- A/B testing for new models</p>
+<h3 id="1033-false-alarms">10.3.3 False Alarms</h3>
+<p><strong>Problem</strong>: False positive storm warnings</p>
+<p><strong>Impact</strong>: Alert fatigue, loss of trust</p>
+<p><strong>Trade-off</strong>: Sensitivity vs specificity</p>
+<p><strong>Mitigation</strong>:
+- Calibrated probabilities
+- User-configurable thresholds
+- Confidence indicators</p>
+<h3 id="1034-liability-and-responsibility">10.3.4 Liability and Responsibility</h3>
+<p><strong>Problem</strong>: Who is responsible if forecast is wrong?</p>
+<p><strong>Legal</strong>: Predictions are advisory only</p>
+<p><strong>Ethical</strong>: Provide best possible forecast, communicate uncertainty</p>
+<p><strong>Solution</strong>: Clear disclaimers, uncertainty quantification</p>
+<h2 id="104-scientific-limitations">10.4 Scientific Limitations</h2>
+<h3 id="1041-incomplete-physics">10.4.1 Incomplete Physics</h3>
+<p><strong>Problem</strong>: Model doesn't explicitly represent all physics</p>
+<p><strong>Missing</strong>:
+- Substorm dynamics
+- Plasmasphere effects
+- Ionospheric feedback</p>
+<p><strong>Impact</strong>: May miss some physical regimes</p>
+<p><strong>Mitigation</strong>: Hybrid ML-physics models</p>
+<h3 id="1042-generalization-to-unseen-conditions">10.4.2 Generalization to Unseen Conditions</h3>
+<p><strong>Problem</strong>: Model trained on historical data</p>
+<p><strong>Question</strong>: Will it work for unprecedented events?</p>
+<p><strong>Example</strong>: Carrington Event (1859) - Dst estimated at -1760 nT</p>
+<p><strong>Mitigation</strong>:
+- Physics constraints
+- Ensemble with physics models
+- Conservative extrapolation</p>
+<h3 id="1043-causality-vs-correlation">10.4.3 Causality vs Correlation</h3>
+<p><strong>Problem</strong>: ML learns correlations, not causation</p>
+<p><strong>Risk</strong>: Spurious correlations may fail in new regimes</p>
+<p><strong>Example</strong>: Model might learn time-of-day patterns that don't generalize</p>
+<p><strong>Mitigation</strong>:
+- Feature selection based on physics
+- Causal inference methods
+- Validation on out-of-distribution data</p>
+<hr />
+<hr />
+    </body>
+    </html>
+    
