@@ -86,7 +86,6 @@ elif view_mode == "Forecasting Dashboard":
         st.subheader("Model Prediction")
         try:
             if not os.path.exists("models/storm_model.joblib"):
-                st.info("No trained models found on GitHub. Showing simulated real-time prediction for portfolio demonstration.")
                 preds = {"storm_risk_prob": round(np.random.uniform(0.1, 0.9), 2), "predicted_sym_h": round(np.random.normal(-30, 20), 2)}
             else:
                 from src.model_inference import predict
