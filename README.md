@@ -132,7 +132,7 @@ make data
 # 2. Add time-series lags and rolling features
 make features
 
-# 3. Shard the data and train the LightGBM models
+# 3. Shard the data and train the models
 make train
 ```
 
