@@ -29,7 +29,17 @@ def load_data():
         df = pd.read_csv("data/processed/omni.csv", parse_dates=["timestamp"])
         return df
     except FileNotFoundError:
-        return None
+        # Generate realistic mock data for portfolio demonstration if running on Streamlit Cloud
+        dates = pd.date_range(end=pd.Timestamp.utcnow(), periods=2000, freq="1min")
+        df = pd.DataFrame({
+            "timestamp": dates,
+            "sym_h": np.random.normal(-15, 20, 2000),
+            "bz_gsm": np.random.normal(0, 5, 2000),
+            "speed": np.random.normal(450, 50, 2000)
+        })
+        # Add a simulated storm
+        df.loc[1500:1600, "sym_h"] = np.random.normal(-80, 10, 101)
+        return df
 
 
 df = load_data()
@@ -58,7 +68,7 @@ if view_mode == "Data Exploration (EDA)":
         st.line_chart(recent_df[["sym_h", "bz_gsm"]])
     else:
         st.warning(
-            "Data not found. Please run `python src/parse_omni.py` to generate the dataset."
+            "Data not found. Please run `python src/data_ingestion.py` to generate the dataset."
         )
 
 elif view_mode == "Forecasting Dashboard":
@@ -75,12 +85,17 @@ elif view_mode == "Forecasting Dashboard":
 
         st.subheader("Model Prediction")
         try:
-            from src.model_inference import predict
+            if not os.path.exists("models") and not os.path.exists("models_deploy"):
+                st.info("No trained models found on GitHub. Showing simulated real-time prediction for portfolio demonstration.")
+                preds = {"storm_risk_prob": round(np.random.uniform(0.1, 0.9), 2), "predicted_sym_h": round(np.random.normal(-30, 20), 2)}
+            else:
+                from src.model_inference import predict
 
-            temp_csv = "data/processed/temp_latest.csv"
-            df.tail(100).to_csv(temp_csv, index=False)
+                os.makedirs("data/processed", exist_ok=True)
+                temp_csv = "data/processed/temp_latest.csv"
+                df.tail(100).to_csv(temp_csv, index=False)
 
-            preds = predict(temp_csv, "models")
+                preds = predict(temp_csv, "models")
 
             st.success("Prediction Complete!")
             st.json(preds)
@@ -93,7 +108,7 @@ elif view_mode == "Forecasting Dashboard":
         except Exception as e:
             st.error(f"Could not run forecasting model. Error: {e}")
             st.markdown(
-                "*Note: Have you trained the models using `src/train_lgbm.py`?*"
+                "*Note: Have you trained the models using `src/model_training.py`?*"
             )
     else:
         st.warning("Data not found. Cannot run forecasting.")
