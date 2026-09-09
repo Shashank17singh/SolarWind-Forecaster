@@ -2,7 +2,7 @@ import argparse
 import joblib
 import numpy as np
 import pandas as pd
-from feature_engineering import FEATURE_COLS, add_rolling_features
+from src.feature_engineering import FEATURE_COLS, add_rolling_features
 
 
 def make_features(df: pd.DataFrame) -> pd.DataFrame:
