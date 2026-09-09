@@ -1,6 +1,6 @@
-# Contributing to Space Weather Sentinel
+# Contributing to SolarWind Forecaster
 
-We welcome contributions to the Space Weather Sentinel project! Please follow these steps to contribute:
+We welcome contributions to the SolarWind Forecaster project! Please follow these steps to contribute:
 
 ## 1. Local Development
 1. Fork the repository and clone it locally.

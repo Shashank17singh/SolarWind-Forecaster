@@ -1,6 +1,6 @@
 <div align="center">
 
-#  Space Weather Sentinel
+#  SolarWind Forecaster
 
 **A data science pipeline and LightGBM model for 15-minute forecasting of geomagnetic storm risk using massive NASA/NOAA datasets.**
 
