@@ -6,14 +6,12 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
-import lightgbm as lgb
-from model_registry import register_model
-import pyarrow.parquet as pq
+from sklearn.ensemble import GradientBoostingRegressor, GradientBoostingClassifier
 from sklearn.metrics import log_loss, mean_absolute_error, mean_squared_error
 from sklearn.isotonic import IsotonicRegression
+import pyarrow.parquet as pq
 
 LABEL_COLS = {"storm_risk", "symh_future", "flare_mx_next_15m"}
-
 
 def _list_parquet_files(dir_path: str) -> list[Path]:
     path = Path(dir_path)
@@ -24,138 +22,53 @@ def _list_parquet_files(dir_path: str) -> list[Path]:
         raise FileNotFoundError(f"No parquet files found in: {dir_path}")
     return files
 
-
-def _estimate_pos_weight(
-    files: list[Path], label_col: str, max_rows: int, seed: int
-) -> float:
-    total = 0
-    pos = 0
+def _load_sample_from_shards(files: list[Path], feature_cols: list[str], max_rows: int, seed: int):
+    """Load a random sample of rows from parquet shards to fit in memory for scikit-learn."""
+    dfs = []
+    total_loaded = 0
     for path in files:
-        df = pd.read_parquet(path, columns=[label_col])
-        if max_rows and total >= max_rows:
+        if total_loaded >= max_rows:
             break
-        if max_rows:
-            remaining = max_rows - total
-            if remaining < len(df):
-                df = df.sample(n=remaining, random_state=seed + total)
-        y = pd.to_numeric(df[label_col], errors="coerce").fillna(0).astype("int8")
-        pos += int((y == 1).sum())
-        total += len(y)
-    if pos == 0:
-        return 1.0
-    return float((total - pos) / pos)
+        df = pd.read_parquet(path)
+        
+        # Take a subset to avoid memory explosion if the shard is huge
+        if len(df) > max_rows // len(files):
+            df = df.sample(n=max_rows // len(files), random_state=seed)
+            
+        dfs.append(df)
+        total_loaded += len(df)
+    
+    if not dfs:
+        return pd.DataFrame()
+        
+    full_df = pd.concat(dfs, ignore_index=True)
+    if len(full_df) > max_rows:
+        full_df = full_df.sample(n=max_rows, random_state=seed)
+        
+    return full_df
 
-
-def _eval_classifier(
-    model: lgb.Booster,
-    files: list[Path],
-    feature_cols: list[str],
-    label_col: str,
-    max_rows: int,
-    seed: int,
-):
-    total = 0
-    loss_sum = 0.0
-    acc_sum = 0
-    for path in files:
-        if max_rows and total >= max_rows:
-            break
-        df = pd.read_parquet(path, columns=feature_cols + [label_col])
-        if max_rows:
-            remaining = max_rows - total
-            if remaining < len(df):
-                df = df.sample(n=remaining, random_state=seed + total)
-        y = (
-            pd.to_numeric(df[label_col], errors="coerce")
-            .fillna(0)
-            .astype("int8")
-            .to_numpy()
-        )
-        X = df[feature_cols].to_numpy(dtype=np.float32)
-        prob = model.predict(X)
-        loss_sum += log_loss(y, prob, labels=[0, 1]) * len(y)
-        acc_sum += ((prob >= 0.5).astype(np.int8) == y).sum()
-        total += len(y)
-    if total == 0:
+def _eval_classifier(model, X, y):
+    if len(y) == 0:
         return {"log_loss": float("nan"), "accuracy": float("nan")}
-    return {"log_loss": loss_sum / total, "accuracy": acc_sum / total}
+    
+    prob = model.predict_proba(X)[:, 1] if hasattr(model, "predict_proba") else model.predict(X)
+    loss = log_loss(y, prob, labels=[0, 1])
+    acc = ((prob >= 0.5).astype(np.int8) == y).mean()
+    return {"log_loss": loss, "accuracy": acc}
 
-
-def _eval_regressor(
-    model: lgb.Booster,
-    files: list[Path],
-    feature_cols: list[str],
-    label_col: str,
-    max_rows: int,
-    seed: int,
-):
-    total = 0
-    abs_sum = 0.0
-    sq_sum = 0.0
-    for path in files:
-        if max_rows and total >= max_rows:
-            break
-        df = pd.read_parquet(path, columns=feature_cols + [label_col])
-        if max_rows:
-            remaining = max_rows - total
-            if remaining < len(df):
-                df = df.sample(n=remaining, random_state=seed + total)
-        y = (
-            pd.to_numeric(df[label_col], errors="coerce")
-            .fillna(0)
-            .astype("float32")
-            .to_numpy()
-        )
-        X = df[feature_cols].to_numpy(dtype=np.float32)
-        pred = model.predict(X)
-        diff = pred - y
-        abs_sum += np.abs(diff).sum()
-        sq_sum += np.square(diff).sum()
-        total += len(y)
-    if total == 0:
+def _eval_regressor(model, X, y):
+    if len(y) == 0:
         return {"mae": float("nan"), "rmse": float("nan")}
-    return {"mae": abs_sum / total, "rmse": np.sqrt(sq_sum / total)}
+    pred = model.predict(X)
+    mae = mean_absolute_error(y, pred)
+    rmse = np.sqrt(mean_squared_error(y, pred))
+    return {"mae": mae, "rmse": rmse}
 
 
-def _collect_probs(
-    model: lgb.Booster,
-    files: list[Path],
-    feature_cols: list[str],
-    label_col: str,
-    max_rows: int,
-    seed: int,
-):
-    probs = []
-    labels = []
-    total = 0
-    for path in files:
-        if max_rows and total >= max_rows:
-            break
-        df = pd.read_parquet(path, columns=feature_cols + [label_col])
-        if max_rows:
-            remaining = max_rows - total
-            if remaining < len(df):
-                df = df.sample(n=remaining, random_state=seed + total)
-        y = (
-            pd.to_numeric(df[label_col], errors="coerce")
-            .fillna(0)
-            .astype("int8")
-            .to_numpy()
-        )
-        X = df[feature_cols].to_numpy(dtype=np.float32)
-        prob = model.predict(X)
-        probs.append(prob)
-        labels.append(y)
-        total += len(y)
-    if not probs:
-        return np.array([]), np.array([])
-    return np.concatenate(probs), np.concatenate(labels)
-
-
-def train_lgbm(
+def train_gradient_boosting(
     parquet_dir: str,
     model_dir: str,
-    rounds_per_shard: int,
+    max_train_rows: int,
     max_eval_rows: int,
     seed: int,
 ):
@@ -167,251 +80,113 @@ def train_lgbm(
     feature_cols = [c for c in schema_cols if c not in LABEL_COLS and c != "time"]
     flare_available = "flare_mx_next_15m" in schema_cols
 
-    print(f"[lgbm] features={len(feature_cols)} flare={flare_available}", flush=True)
+    print(f"[sklearn] features={len(feature_cols)} flare={flare_available}", flush=True)
 
-    storm_weight = _estimate_pos_weight(
-        train_files, "storm_risk", max_rows=1_000_000, seed=seed
+    print("Loading training data sample into memory...")
+    train_df = _load_sample_from_shards(train_files, feature_cols, max_train_rows, seed)
+    
+    print("Loading validation data sample into memory...")
+    val_df = _load_sample_from_shards(val_files, feature_cols, max_eval_rows, seed + 1)
+    
+    print("Loading test data sample into memory...")
+    test_df = _load_sample_from_shards(test_files, feature_cols, max_eval_rows, seed + 2)
+
+    X_train = train_df[feature_cols].fillna(0).to_numpy(dtype=np.float32)
+    X_val = val_df[feature_cols].fillna(0).to_numpy(dtype=np.float32)
+    X_test = test_df[feature_cols].fillna(0).to_numpy(dtype=np.float32)
+
+    # SYM-H Regressor
+    y_symh_train = pd.to_numeric(train_df["symh_future"], errors="coerce").fillna(0).astype("float32").to_numpy()
+    y_symh_val = pd.to_numeric(val_df["symh_future"], errors="coerce").fillna(0).astype("float32").to_numpy()
+    y_symh_test = pd.to_numeric(test_df["symh_future"], errors="coerce").fillna(0).astype("float32").to_numpy()
+
+    print("[sklearn] Training SYM-H Regressor...", flush=True)
+    symh_model = GradientBoostingRegressor(
+        n_estimators=100, 
+        learning_rate=0.1, 
+        max_depth=5, 
+        random_state=seed
     )
-    flare_weight = None
-    if flare_available:
-        flare_weight = _estimate_pos_weight(
-            train_files, "flare_mx_next_15m", max_rows=1_000_000, seed=seed + 7
-        )
+    symh_model.fit(X_train, y_symh_train)
 
-    storm_params = {
-        "objective": "binary",
-        "learning_rate": 0.05,
-        "num_leaves": 64,
-        "feature_fraction": 0.8,
-        "bagging_fraction": 0.8,
-        "bagging_freq": 1,
-        "metric": "binary_logloss",
-        "scale_pos_weight": storm_weight,
-        "seed": seed,
-        "verbosity": -1,
-    }
-    symh_params = {
-        "objective": "regression",
-        "learning_rate": 0.05,
-        "num_leaves": 64,
-        "feature_fraction": 0.8,
-        "bagging_fraction": 0.8,
-        "bagging_freq": 1,
-        "metric": "l1",
-        "seed": seed,
-        "verbosity": -1,
-    }
-    flare_params = None
-    if flare_available:
-        flare_params = {
-            "objective": "binary",
-            "learning_rate": 0.05,
-            "num_leaves": 64,
-            "feature_fraction": 0.8,
-            "bagging_fraction": 0.8,
-            "bagging_freq": 1,
-            "metric": "binary_logloss",
-            "scale_pos_weight": flare_weight if flare_weight else 1.0,
-            "seed": seed,
-            "verbosity": -1,
-        }
+    # Storm Risk Classifier
+    y_storm_train = pd.to_numeric(train_df["storm_risk"], errors="coerce").fillna(0).astype("int8").to_numpy()
+    y_storm_val = pd.to_numeric(val_df["storm_risk"], errors="coerce").fillna(0).astype("int8").to_numpy()
+    y_storm_test = pd.to_numeric(test_df["storm_risk"], errors="coerce").fillna(0).astype("int8").to_numpy()
 
-    storm_model = None
-    symh_model = None
+    print("[sklearn] Training Storm Risk Classifier...", flush=True)
+    storm_model = GradientBoostingClassifier(
+        n_estimators=100, 
+        learning_rate=0.1, 
+        max_depth=5, 
+        random_state=seed
+    )
+    storm_model.fit(X_train, y_storm_train)
+
     flare_model = None
+    if flare_available:
+        y_flare_train = pd.to_numeric(train_df["flare_mx_next_15m"], errors="coerce").fillna(0).astype("int8").to_numpy()
+        y_flare_val = pd.to_numeric(val_df["flare_mx_next_15m"], errors="coerce").fillna(0).astype("int8").to_numpy()
+        y_flare_test = pd.to_numeric(test_df["flare_mx_next_15m"], errors="coerce").fillna(0).astype("int8").to_numpy()
 
-    for i, path in enumerate(train_files, start=1):
-        df = pd.read_parquet(
-            path,
-            columns=feature_cols
-            + ["storm_risk", "symh_future"]
-            + (["flare_mx_next_15m"] if flare_available else []),
+        print("[sklearn] Training Flare Risk Classifier...", flush=True)
+        flare_model = GradientBoostingClassifier(
+            n_estimators=100, 
+            learning_rate=0.1, 
+            max_depth=5, 
+            random_state=seed
         )
-        X = df[feature_cols].to_numpy(dtype=np.float32)
-        y_storm = (
-            pd.to_numeric(df["storm_risk"], errors="coerce")
-            .fillna(0)
-            .astype("int8")
-            .to_numpy()
-        )
-        y_symh = (
-            pd.to_numeric(df["symh_future"], errors="coerce")
-            .fillna(0)
-            .astype("float32")
-            .to_numpy()
-        )
+        flare_model.fit(X_train, y_flare_train)
 
-        d_storm = lgb.Dataset(X, label=y_storm, free_raw_data=True)
-        d_symh = lgb.Dataset(X, label=y_symh, free_raw_data=True)
+    print("[sklearn] Validation Evaluation", flush=True)
+    storm_val = _eval_classifier(storm_model, X_val, y_storm_val)
+    symh_val = _eval_regressor(symh_model, X_val, y_symh_val)
+    
+    print(f"Storm val log_loss={storm_val['log_loss']:.4f} acc={storm_val['accuracy']:.4f}", flush=True)
+    print(f"SYM/H val MAE={symh_val['mae']:.4f} RMSE={symh_val['rmse']:.4f}", flush=True)
 
-        storm_model = lgb.train(
-            storm_params,
-            d_storm,
-            num_boost_round=rounds_per_shard,
-            init_model=storm_model,
-            keep_training_booster=True,
-        )
-        symh_model = lgb.train(
-            symh_params,
-            d_symh,
-            num_boost_round=rounds_per_shard,
-            init_model=symh_model,
-            keep_training_booster=True,
-        )
+    print("[sklearn] Test Evaluation", flush=True)
+    storm_test = _eval_classifier(storm_model, X_test, y_storm_test)
+    symh_test = _eval_regressor(symh_model, X_test, y_symh_test)
+    
+    print(f"Storm test log_loss={storm_test['log_loss']:.4f} acc={storm_test['accuracy']:.4f}", flush=True)
+    print(f"SYM/H test MAE={symh_test['mae']:.4f} RMSE={symh_test['rmse']:.4f}", flush=True)
 
-        if flare_available:
-            y_flare = (
-                pd.to_numeric(df["flare_mx_next_15m"], errors="coerce")
-                .fillna(0)
-                .astype("int8")
-                .to_numpy()
-            )
-            d_flare = lgb.Dataset(X, label=y_flare, free_raw_data=True)
-            flare_model = lgb.train(
-                flare_params,
-                d_flare,
-                num_boost_round=rounds_per_shard,
-                init_model=flare_model,
-                keep_training_booster=True,
-            )
-
-        if i % 5 == 0 or i == len(train_files):
-            print(f"[lgbm] trained shard {i}/{len(train_files)}", flush=True)
-
-    print("[lgbm] validation", flush=True)
-    storm_val = _eval_classifier(
-        storm_model, val_files, feature_cols, "storm_risk", max_eval_rows, seed
-    )
-    symh_val = _eval_regressor(
-        symh_model, val_files, feature_cols, "symh_future", max_eval_rows, seed
-    )
-    print(
-        f"Storm val log_loss={storm_val['log_loss']:.4f} acc={storm_val['accuracy']:.4f}",
-        flush=True,
-    )
-    print(
-        f"SYM/H val MAE={symh_val['mae']:.4f} RMSE={symh_val['rmse']:.4f}", flush=True
-    )
-    if flare_available and flare_model is not None:
-        flare_val = _eval_classifier(
-            flare_model,
-            val_files,
-            feature_cols,
-            "flare_mx_next_15m",
-            max_eval_rows,
-            seed,
-        )
-        print(
-            f"Flare val log_loss={flare_val['log_loss']:.4f} acc={flare_val['accuracy']:.4f}",
-            flush=True,
-        )
-
-    print("[lgbm] test", flush=True)
-    storm_test = _eval_classifier(
-        storm_model, test_files, feature_cols, "storm_risk", max_eval_rows, seed
-    )
-    symh_test = _eval_regressor(
-        symh_model, test_files, feature_cols, "symh_future", max_eval_rows, seed
-    )
-    print(
-        f"Storm test log_loss={storm_test['log_loss']:.4f} acc={storm_test['accuracy']:.4f}",
-        flush=True,
-    )
-    print(
-        f"SYM/H test MAE={symh_test['mae']:.4f} RMSE={symh_test['rmse']:.4f}",
-        flush=True,
-    )
-    if flare_available and flare_model is not None:
-        flare_test = _eval_classifier(
-            flare_model,
-            test_files,
-            feature_cols,
-            "flare_mx_next_15m",
-            max_eval_rows,
-            seed,
-        )
-        print(
-            f"Flare test log_loss={flare_test['log_loss']:.4f} acc={flare_test['accuracy']:.4f}",
-            flush=True,
-        )
-
-    print("[lgbm] calibration", flush=True)
-    storm_probs, storm_labels = _collect_probs(
-        storm_model, val_files, feature_cols, "storm_risk", max_eval_rows, seed
-    )
-    storm_cal = None
-    if len(storm_probs):
-        storm_cal = IsotonicRegression(y_min=0.0, y_max=1.0, out_of_bounds="clip")
-        storm_cal.fit(storm_probs, storm_labels)
+    print("[sklearn] Calibration", flush=True)
+    storm_probs = storm_model.predict_proba(X_val)[:, 1]
+    storm_cal = IsotonicRegression(y_min=0.0, y_max=1.0, out_of_bounds="clip")
+    storm_cal.fit(storm_probs, y_storm_val)
+    
     flare_cal = None
-    if flare_available and flare_model is not None:
-        flare_probs, flare_labels = _collect_probs(
-            flare_model,
-            val_files,
-            feature_cols,
-            "flare_mx_next_15m",
-            max_eval_rows,
-            seed + 3,
-        )
-        if len(flare_probs):
-            flare_cal = IsotonicRegression(y_min=0.0, y_max=1.0, out_of_bounds="clip")
-            flare_cal.fit(flare_probs, flare_labels)
+    if flare_available:
+        flare_probs = flare_model.predict_proba(X_val)[:, 1]
+        flare_cal = IsotonicRegression(y_min=0.0, y_max=1.0, out_of_bounds="clip")
+        flare_cal.fit(flare_probs, y_flare_val)
 
     os.makedirs(model_dir, exist_ok=True)
     storm_path = os.path.join(model_dir, "storm_model.joblib")
-    joblib.dump(
-        {"model": storm_model, "features": feature_cols, "calibrator": storm_cal},
-        storm_path,
-    )
+    joblib.dump({"model": storm_model, "features": feature_cols, "calibrator": storm_cal}, storm_path)
+    
     symh_path = os.path.join(model_dir, "symh_model.joblib")
     joblib.dump({"model": symh_model, "features": feature_cols}, symh_path)
+    
     if flare_available and flare_model is not None:
         flare_path = os.path.join(model_dir, "flare_model.joblib")
-        joblib.dump(
-            {"model": flare_model, "features": feature_cols, "calibrator": flare_cal},
-            flare_path,
-        )
-
-    run_version = datetime.utcnow().strftime("%Y%m%d%H%M%S")
-    register_model(
-        name="storm_model_lgbm",
-        version=run_version,
-        artifact_path=storm_path,
-        metrics={**storm_val, **storm_test},
-        metadata={"feature_cols": feature_cols, "training": "lgbm_shards"},
-    )
-    register_model(
-        name="symh_model_lgbm",
-        version=run_version,
-        artifact_path=symh_path,
-        metrics={**symh_val, **symh_test},
-        metadata={"feature_cols": feature_cols, "training": "lgbm_shards"},
-    )
-    if flare_available and flare_model is not None:
-        register_model(
-            name="flare_model_lgbm",
-            version=run_version,
-            artifact_path=flare_path,
-            metrics={**flare_val, **flare_test},
-            metadata={"feature_cols": feature_cols, "training": "lgbm_shards"},
-        )
-
+        joblib.dump({"model": flare_model, "features": feature_cols, "calibrator": flare_cal}, flare_path)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="LightGBM training over Parquet shards"
-    )
+    parser = argparse.ArgumentParser(description="Scikit-learn Gradient Boosting training")
     parser.add_argument("--parquet-dir", default="data/processed/parquet")
     parser.add_argument("--model-dir", default="models")
-    parser.add_argument("--rounds-per-shard", type=int, default=10)
-    parser.add_argument("--max-eval-rows", type=int, default=300000)
+    parser.add_argument("--max-train-rows", type=int, default=100000)
+    parser.add_argument("--max-eval-rows", type=int, default=30000)
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
-    train_lgbm(
+    train_gradient_boosting(
         parquet_dir=args.parquet_dir,
         model_dir=args.model_dir,
-        rounds_per_shard=args.rounds_per_shard,
+        max_train_rows=args.max_train_rows,
         max_eval_rows=args.max_eval_rows,
         seed=args.seed,
     )
