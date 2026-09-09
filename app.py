@@ -8,9 +8,9 @@ import sys
 
 sys.path.append(os.path.abspath("."))
 
-st.set_page_config(page_title="SolarWind Forecaster", page_icon="🌌", layout="wide")
+st.set_page_config(page_title="SolarWind Forecaster", layout="wide")
 
-st.title("🌌 SolarWind Forecaster: Geomagnetic Storm Forecaster")
+st.title("SolarWind Forecaster: Geomagnetic Storm Forecaster")
 st.markdown("""
 This dashboard visualizes historical solar wind data and simulates our LightGBM forecasting model. 
 A **SYM-H** index below -50 nT indicates a moderate geomagnetic storm, and below -100 nT indicates an intense storm.
@@ -101,9 +101,9 @@ elif view_mode == "Forecasting Dashboard":
             st.json(preds)
 
             if preds.get("storm_risk_prob", 0) > 0.5:
-                st.error("⚠️ HIGH RISK OF GEOMAGNETIC STORM IN NEXT 15 MINS")
+                st.error("HIGH RISK OF GEOMAGNETIC STORM IN NEXT 15 MINS")
             else:
-                st.info("✅ Space weather is currently calm.")
+                st.info("Space weather is currently calm.")
 
         except Exception as e:
             st.error(f"Could not run forecasting model. Error: {e}")
