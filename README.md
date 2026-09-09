@@ -92,7 +92,7 @@ SolarWind-Forecaster/
 │   ├── data_sharding.py        # Data splitting and preparation
 │   ├── model_training.py       # Gradient Boosting training loop
 │   ├── model_inference.py      # Real-time prediction wrappers
-│   └── experiments/            # Experimental scripts
+│   └── experiments/            # Experimental scripts (LSTMs, Drag models)
 ├── tests/                      # Unit tests
 ├── app.py                      # Streamlit interactive dashboard
 ├── Makefile                    # Automation shortcuts
