@@ -1,0 +1,22 @@
+{
+  "model": "cme_impact_lgbm",
+  "version": "20260207094145",
+  "train_end": "2023-12-31",
+  "feature_cols": [
+    "cme_speed", "cme_width", "cme_lat", "cme_lon",
+    "halo", "pa", "mpa",
+    "bz_gsm", "flow_speed", "proton_density", "flow_pressure"
+  ],
+  "transit_feature_cols": [
+    "cme_speed", "cme_width", "cme_lat", "cme_lon", "halo"
+  ],
+  "target_col": "earth_impact",
+  "transit_target_col": "transit_hours",
+  "threshold": 0.5,
+  "metrics": {
+    "val_auc": 0.82,
+    "val_f1": 0.68,
+    "transit_rmse_hours": 6.4
+  },
+  "notes": "Stub metadata — retrain to replace with real values."
+}

@@ -1,0 +1,45 @@
+{
+  "notes": "Demo presets only. Replace with your satellite's real values for accurate drag.",
+  "presets": [
+    {
+      "id": "cubesat_3u",
+      "name": "CubeSat 3U (demo)",
+      "mass_kg": 4.0,
+      "area_m2": 0.03,
+      "cd": 2.2,
+      "alt_km": 500
+    },
+    {
+      "id": "cubesat_6u",
+      "name": "CubeSat 6U (demo)",
+      "mass_kg": 12.0,
+      "area_m2": 0.05,
+      "cd": 2.2,
+      "alt_km": 500
+    },
+    {
+      "id": "smallsat_100kg",
+      "name": "SmallSat 100 kg (demo)",
+      "mass_kg": 100.0,
+      "area_m2": 1.0,
+      "cd": 2.2,
+      "alt_km": 550
+    },
+    {
+      "id": "leo_platform_500kg",
+      "name": "LEO Platform 500 kg (demo)",
+      "mass_kg": 500.0,
+      "area_m2": 4.0,
+      "cd": 2.2,
+      "alt_km": 700
+    },
+    {
+      "id": "leo_platform_1000kg",
+      "name": "LEO Platform 1000 kg (demo)",
+      "mass_kg": 1000.0,
+      "area_m2": 8.0,
+      "cd": 2.2,
+      "alt_km": 400
+    }
+  ]
+}

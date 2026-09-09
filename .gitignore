@@ -1,0 +1,38 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+ENV/
+.env
+
+# Node/Next.js
+node_modules/
+.next/
+out/
+.vercel/
+
+# Data and model artifacts (kept on external drive)
+data/
+logs/
+models/
+models_sgd/
+
+# Large model binaries
+models_deploy/*.joblib
+models_sgd/
+
+# Large/temporary artifacts
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+.ipynb_checkpoints/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/

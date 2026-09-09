@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Space Weather Sentinel — ER / Architecture Diagram</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #070b12;
+      font-family: 'Segoe UI', sans-serif;
+      color: #e2e8f0;
+      padding: 32px 24px 60px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 26px;
+      color: #f6c45f;
+      margin-bottom: 6px;
+      letter-spacing: 0.04em;
+    }
+    .subtitle {
+      text-align: center;
+      color: #64748b;
+      font-size: 13px;
+      margin-bottom: 40px;
+    }
+
+    /* ── LAYER WRAPPER ── */
+    .diagram {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    /* ── LAYER ROW ── */
+    .layer {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+    }
+
+    .layer-label {
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      min-width: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      border-radius: 10px 0 0 10px;
+      padding: 12px 6px;
+    }
+
+    .layer-body {
+      flex: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      padding: 20px 20px 20px 16px;
+      border-radius: 0 14px 14px 0;
+    }
+
+    /* Layer colours */
+    .l-data   .layer-label { background: #1a3a5c; color: #60a5fa; }
+    .l-data   .layer-body  { background: rgba(26,58,92,0.25); border: 1px solid rgba(96,165,250,0.2); }
+
+    .l-proc   .layer-label { background: #2d1b4e; color: #c084fc; }
+    .l-proc   .layer-body  { background: rgba(45,27,78,0.25); border: 1px solid rgba(192,132,252,0.2); }
+
+    .l-model  .layer-label { background: #1a3d2b; color: #4ade80; }
+    .l-model  .layer-body  { background: rgba(26,61,43,0.25); border: 1px solid rgba(74,222,128,0.2); }
+
+    .l-api    .layer-label { background: #3b2a10; color: #fbbf24; }
+    .l-api    .layer-body  { background: rgba(59,42,16,0.25); border: 1px solid rgba(251,191,36,0.2); }
+
+    .l-ui     .layer-label { background: #1e3a4a; color: #22d3ee; }
+    .l-ui     .layer-body  { background: rgba(30,58,74,0.25); border: 1px solid rgba(34,211,238,0.2); }
+
+    .l-infra  .layer-label { background: #3a1a1a; color: #f87171; }
+    .l-infra  .layer-body  { background: rgba(58,26,26,0.25); border: 1px solid rgba(248,113,113,0.2); }
+
+    /* ── ARROWS between layers ── */
+    .arrow-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 42px;
+      gap: 60px;
+    }
+    .arrow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      color: #475569;
+      font-size: 11px;
+    }
+    .arrow-line {
+      width: 2px;
+      height: 18px;
+      background: linear-gradient(to bottom, #334155, #475569);
+    }
+    .arrow-head {
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 8px solid #475569;
+    }
+    .arrow-label { color: #64748b; font-size: 10px; letter-spacing: 0.06em; }
+
+    /* ── ENTITY BOXES ── */
+    .entity {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 14px 16px;
+      min-width: 180px;
+      max-width: 260px;
+      flex: 1;
+      position: relative;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .entity:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+    }
+    .entity-title {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .entity-icon {
+      font-size: 16px;
+    }
+    .field {
+      font-size: 11px;
+      color: #94a3b8;
+      padding: 3px 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .field-pk  { color: #f6c45f; }
+    .field-fk  { color: #60a5fa; }
+    .field-attr{ color: #94a3b8; }
+    .pk-badge {
+      font-size: 9px;
+      background: rgba(246,196,95,0.2);
+      color: #f6c45f;
+      border-radius: 3px;
+      padding: 1px 5px;
+      font-weight: 700;
+    }
+    .fk-badge {
+      font-size: 9px;
+      background: rgba(96,165,250,0.2);
+      color: #60a5fa;
+      border-radius: 3px;
+      padding: 1px 5px;
+      font-weight: 700;
+    }
+    .type-badge {
+      font-size: 9px;
+      background: rgba(255,255,255,0.06);
+      color: #64748b;
+      border-radius: 3px;
+      padding: 1px 5px;
+      margin-left: auto;
+    }
+
+    /* ── RELATIONSHIP CONNECTORS ── */
+    .rel-row {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 8px 0;
+    }
+    .rel-badge {
+      font-size: 11px;
+      padding: 5px 14px;
+      border-radius: 999px;
+      border: 1px solid;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .rel-badge.one-many  { border-color: rgba(96,165,250,0.4); color: #60a5fa; background: rgba(96,165,250,0.08); }
+    .rel-badge.many-many { border-color: rgba(192,132,252,0.4); color: #c084fc; background: rgba(192,132,252,0.08); }
+    .rel-badge.one-one   { border-color: rgba(74,222,128,0.4); color: #4ade80; background: rgba(74,222,128,0.08); }
+
+    /* ── SECTION HEADER ── */
+    .section-header {
+      text-align: center;
+      margin: 36px 0 16px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #475569;
+    }
+    .section-header span {
+      background: #0f1724;
+      padding: 0 16px;
+    }
+    hr.divider {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      margin: 0 0 16px;
+    }
+
+    /* ── FULL FLOW SVG ── */
+    .flow-wrap {
+      overflow-x: auto;
+      padding: 10px 0;
+    }
+    svg.flow {
+      min-width: 900px;
+      width: 100%;
+      max-width: 1300px;
+      display: block;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🌞 Space Weather Sentinel</h1>
+<p class="subtitle">Entity Relationship & System Architecture Diagram</p>
+
+<div class="diagram">
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  LAYER 1 — DATA SOURCES                               -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="layer l-data">
+    <div class="layer-label">Data Sources</div>
+    <div class="layer-body">
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">🛰️</span> OMNI_Solar_Wind</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> timestamp <span class="type-badge">DATETIME</span></div>
+        <div class="field field-attr">• bz_gsm <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">• flow_speed <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">• proton_density <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">• temperature <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">• flow_pressure <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">• electric_field <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">• plasma_beta <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">• alfven_mach <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">• ae, al, au <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">• sym_h, asy_h <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">Source: NASA GSFC 1995–2025</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">☀️</span> Flare_Reports</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> event_id <span class="type-badge">INT</span></div>
+        <div class="field field-attr">• peak_time <span class="type-badge">DATETIME</span></div>
+        <div class="field field-attr">• start_time <span class="type-badge">DATETIME</span></div>
+        <div class="field field-attr">• end_time <span class="type-badge">DATETIME</span></div>
+        <div class="field field-attr">• class <span class="type-badge">ENUM A/B/C/M/X</span></div>
+        <div class="field field-attr">• flux_wm2 <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">• active_region <span class="type-badge">INT</span></div>
+        <div class="field field-attr">Source: NOAA NGDC 1975–2016</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">🧲</span> Kyoto_Dst</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> timestamp <span class="type-badge">DATETIME</span></div>
+        <div class="field field-attr">• dst_kyoto <span class="type-badge">FLOAT nT</span></div>
+        <div class="field field-attr">• resolution <span class="type-badge">1-hour</span></div>
+        <div class="field field-attr">Source: Kyoto WDC 1957–present</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">🌡️</span> JB2008_Indices</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> timestamp <span class="type-badge">DATETIME</span></div>
+        <div class="field field-attr">• dtc <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">• f107 <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">• sw_all <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">Source: Space Env. Tech 2000–present</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">🛸</span> Spacecraft_Anomalies</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> anomaly_id <span class="type-badge">INT</span></div>
+        <div class="field field-attr">• timestamp <span class="type-badge">DATETIME</span></div>
+        <div class="field field-attr">• satellite_name <span class="type-badge">VARCHAR</span></div>
+        <div class="field field-attr">• anomaly_type <span class="type-badge">VARCHAR</span></div>
+        <div class="field field-attr">• severity <span class="type-badge">ENUM</span></div>
+        <div class="field field-attr">Source: NCEI NOAA 1971–2020</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">🌐</span> CME_Events (DONKI)</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> cme_id <span class="type-badge">VARCHAR</span></div>
+        <div class="field field-attr">• start_time <span class="type-badge">DATETIME</span></div>
+        <div class="field field-attr">• speed_kms <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">• half_angle <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">• latitude <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">• longitude <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">• is_halo <span class="type-badge">BOOL</span></div>
+        <div class="field field-attr">• active_region <span class="type-badge">INT</span></div>
+        <div class="field field-attr">Source: NASA CCMC Real-time</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ARROW -->
+  <div class="arrow-row">
+    <div class="arrow"><div class="arrow-label">parse_omni.py</div><div class="arrow-line"></div><div class="arrow-head"></div></div>
+    <div class="arrow"><div class="arrow-label">load_flare_reports()</div><div class="arrow-line"></div><div class="arrow-head"></div></div>
+    <div class="arrow"><div class="arrow-label">fetch_kyoto_dst.py</div><div class="arrow-line"></div><div class="arrow-head"></div></div>
+    <div class="arrow"><div class="arrow-label">fetch_jb2008.py</div><div class="arrow-line"></div><div class="arrow-head"></div></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  LAYER 2 — FEATURE ENGINEERING / PROCESSED DATA       -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="layer l-proc">
+    <div class="layer-label">Processing</div>
+    <div class="layer-body">
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">⚙️</span> ML_Dataset</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> time <span class="type-badge">DATETIME</span></div>
+        <div class="field field-attr">• 20 base solar wind features</div>
+        <div class="field field-attr">• _w15_mean/std/min/max/delta (×20)</div>
+        <div class="field field-attr">• _w60_mean/std/min/max/delta (×20)</div>
+        <div class="field field-attr">• bz_south, vbz_south, v_np, v2_np</div>
+        <div class="field field-attr"><strong style="color:#c084fc">LABEL:</strong> storm_risk <span class="type-badge">BOOL</span></div>
+        <div class="field field-attr"><strong style="color:#c084fc">LABEL:</strong> symh_future <span class="type-badge">FLOAT nT</span></div>
+        <div class="field field-attr"><strong style="color:#c084fc">LABEL:</strong> flare_mx_next_15m <span class="type-badge">BOOL</span></div>
+        <div class="field field-attr">Total: ~220 features per row</div>
+        <div class="field field-attr">File: data/processed/dataset.csv</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">📦</span> Parquet_Shards</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> shard_id <span class="type-badge">INT</span></div>
+        <div class="field field-attr">• split: train/val/test <span class="type-badge">ENUM</span></div>
+        <div class="field field-attr">• date_range <span class="type-badge">DATE RANGE</span></div>
+        <div class="field field-attr">Train: 1995–2017</div>
+        <div class="field field-attr">Val: 2018–2021</div>
+        <div class="field field-attr">Test: 2022–2025</div>
+        <div class="field field-attr">• chunk_size: 100k rows</div>
+        <div class="field field-attr">File: data/processed/parquet/</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">🔴</span> Live_OMNI_CSV</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> time <span class="type-badge">DATETIME</span></div>
+        <div class="field field-attr">• bz_gsm, flow_speed, density</div>
+        <div class="field field-attr">• Computed: pressure, E-field</div>
+        <div class="field field-attr">• plasma_beta, alfven_mach</div>
+        <div class="field field-attr">Update: every 1 minute (cron)</div>
+        <div class="field field-attr">Source: NOAA MAG + PLASMA feeds</div>
+        <div class="field field-attr">File: data/processed/omni_live.csv</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">📊</span> Drag_Dataset</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> time <span class="type-badge">DATETIME</span></div>
+        <div class="field field-attr">• jb2008 indices (f107, dtc)</div>
+        <div class="field field-attr">• solar wind features</div>
+        <div class="field field-attr"><strong style="color:#c084fc">LABEL:</strong> dtc_3h <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">File: data/processed/drag_dataset.csv</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">🛰️</span> Sat_Impact_Dataset</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> time <span class="type-badge">DATETIME</span></div>
+        <div class="field field-fk"><span class="fk-badge">FK</span> anomaly_id → Spacecraft_Anomalies</div>
+        <div class="field field-attr">• solar wind features at event time</div>
+        <div class="field field-attr"><strong style="color:#c084fc">LABEL:</strong> sat_impact_next_6h <span class="type-badge">BOOL</span></div>
+        <div class="field field-attr">File: data/processed/sat_impact_dataset.csv</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">💨</span> CME_Impact_Dataset</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> cme_id <span class="type-badge">VARCHAR</span></div>
+        <div class="field field-fk"><span class="fk-badge">FK</span> cme_id → CME_Events</div>
+        <div class="field field-attr">• speed, half_angle, width</div>
+        <div class="field field-attr">• latitude, longitude, is_halo</div>
+        <div class="field field-attr">• transit_pred_hours</div>
+        <div class="field field-attr"><strong style="color:#c084fc">LABEL:</strong> earth_impact <span class="type-badge">BOOL</span></div>
+        <div class="field field-attr">File: data/processed/cme_impact_dataset.csv</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ARROW -->
+  <div class="arrow-row">
+    <div class="arrow"><div class="arrow-label">train_lgbm.py</div><div class="arrow-line"></div><div class="arrow-head"></div></div>
+    <div class="arrow"><div class="arrow-label">train_dst_lstm.py</div><div class="arrow-line"></div><div class="arrow-head"></div></div>
+    <div class="arrow"><div class="arrow-label">train_drag.py</div><div class="arrow-line"></div><div class="arrow-head"></div></div>
+    <div class="arrow"><div class="arrow-label">train_sat_impact.py</div><div class="arrow-line"></div><div class="arrow-head"></div></div>
+    <div class="arrow"><div class="arrow-label">train_cme.py</div><div class="arrow-line"></div><div class="arrow-head"></div></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  LAYER 3 — ML MODELS                                  -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="layer l-model">
+    <div class="layer-label">ML Models</div>
+    <div class="layer-body">
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">🌪️</span> Storm_Risk_Model</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> model_id: storm_lgbm</div>
+        <div class="field field-attr">• algo: LightGBM Classifier</div>
+        <div class="field field-attr">• target: P(SYM/H ≤ -50 nT)</div>
+        <div class="field field-attr">• horizon: +15 minutes</div>
+        <div class="field field-attr">• features: 220</div>
+        <div class="field field-attr">• calibrator: Isotonic Regression</div>
+        <div class="field field-attr">• output: probability 0–1</div>
+        <div class="field field-attr">• file: storm_model.joblib</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">📉</span> SYM/H_Regression</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> model_id: symh_lgbm</div>
+        <div class="field field-attr">• algo: LightGBM Regressor</div>
+        <div class="field field-attr">• target: SYM/H at +15 min (nT)</div>
+        <div class="field field-attr">• features: 220</div>
+        <div class="field field-attr">• metric: MAE, RMSE</div>
+        <div class="field field-attr">• output: float (nanoTesla)</div>
+        <div class="field field-attr">• file: symh_model.joblib</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">🧠</span> Dst_LSTM_Attention</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> model_id: dst_lstm</div>
+        <div class="field field-attr">• algo: BiLSTM + Attention (Keras)</div>
+        <div class="field field-attr">• Layer1: BiLSTM(150) → Attention</div>
+        <div class="field field-attr">• Layer2: BiLSTM(170) → Attention</div>
+        <div class="field field-attr">• target: Dst at +1h, 72h series</div>
+        <div class="field field-attr">• seq_len: 48 hours</div>
+        <div class="field field-attr">• features: 49</div>
+        <div class="field field-attr">• file: dst_lstm_attention.keras</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">🔥</span> Flare_Risk_Model</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> model_id: flare_lgbm</div>
+        <div class="field field-attr">• algo: LightGBM Classifier</div>
+        <div class="field field-attr">• target: P(M/X flare in 15 min)</div>
+        <div class="field field-attr">• fallback: GOES X-ray flux proxy</div>
+        <div class="field field-attr">• calibrator: Isotonic Regression</div>
+        <div class="field field-attr">• output: probability + class label</div>
+        <div class="field field-attr">• file: flare_model.joblib</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">🛸</span> Drag_DTC_Model</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> model_id: drag_lgbm</div>
+        <div class="field field-attr">• algo: LightGBM Regressor</div>
+        <div class="field field-attr">• target: JB2008 DTC at +3 hours</div>
+        <div class="field field-attr">• output: DTC → drag acceleration</div>
+        <div class="field field-attr">• F = 0.5×Cd×A×ρ×v²</div>
+        <div class="field field-attr">• file: drag_model.joblib</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">⚠️</span> Sat_Impact_Model</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> model_id: sat_impact</div>
+        <div class="field field-attr">• algo: LightGBM Classifier</div>
+        <div class="field field-attr">• target: P(anomaly in 6h)</div>
+        <div class="field field-attr">• trained on: NCEI anomaly records</div>
+        <div class="field field-attr">• output: prob + Low/Elevated/High</div>
+        <div class="field field-attr">• file: sat_impact_model.joblib</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">💥</span> CME_Impact_Model</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> model_id: cme_impact</div>
+        <div class="field field-attr">• algo: LightGBM (2 models)</div>
+        <div class="field field-attr">• Model 1: impact probability</div>
+        <div class="field field-attr">• Model 2: transit time (hours)</div>
+        <div class="field field-attr">• input: speed, width, lat, lon, halo</div>
+        <div class="field field-attr">• file: cme_impact_model.txt</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">📋</span> Model_Registry</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> registry_id</div>
+        <div class="field field-fk"><span class="fk-badge">FK</span> model_id → all models</div>
+        <div class="field field-attr">• name, version, artifact_path</div>
+        <div class="field field-attr">• created_at <span class="type-badge">DATETIME</span></div>
+        <div class="field field-attr">• metrics {MAE, RMSE, AUC}</div>
+        <div class="field field-attr">• feature_spec_version</div>
+        <div class="field field-attr">• file: models_deploy/registry.json</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ARROW -->
+  <div class="arrow-row">
+    <div class="arrow"><div class="arrow-label">_predict_latest()</div><div class="arrow-line"></div><div class="arrow-head"></div></div>
+    <div class="arrow"><div class="arrow-label">_fetch_kp() / _fetch_sep()</div><div class="arrow-line"></div><div class="arrow-head"></div></div>
+    <div class="arrow"><div class="arrow-label">_cme_live_payload()</div><div class="arrow-line"></div><div class="arrow-head"></div></div>
+    <div class="arrow"><div class="arrow-label">_series() / _dst_forecast()</div><div class="arrow-line"></div><div class="arrow-head"></div></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  LAYER 4 — API SERVER                                 -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="layer l-api">
+    <div class="layer-label">API Server</div>
+    <div class="layer-body">
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">🖥️</span> API_Server</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> server: src/server.py</div>
+        <div class="field field-attr">• ThreadingHTTPServer (Python)</div>
+        <div class="field field-attr">• Port: 8000</div>
+        <div class="field field-attr">• Rate limit: 5 req/sec, burst 20</div>
+        <div class="field field-attr">• API Key auth (optional)</div>
+        <div class="field field-attr">• Cache TTL: 30 seconds</div>
+        <div class="field field-attr">• Rotating logs (2MB × 3)</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">📡</span> API_Endpoints</div>
+        <div class="field field-attr">/api/metrics → storm, symh, flare, drag</div>
+        <div class="field field-attr">/api/kp → Kp index</div>
+        <div class="field field-attr">/api/series → time series data</div>
+        <div class="field field-attr">/api/dst → historical Dst</div>
+        <div class="field field-attr">/api/dst-forecast → 72h forecast</div>
+        <div class="field field-attr">/api/dst-outlook → 30-day outlook</div>
+        <div class="field field-attr">/api/solar-wind-ml → 7-day ML</div>
+        <div class="field field-attr">/api/enlil → WSA-Enlil 4-day</div>
+        <div class="field field-attr">/api/cme → CME prediction</div>
+        <div class="field field-attr">/api/alerts → NOAA bulletins</div>
+        <div class="field field-attr">/api/aurora → aurora images</div>
+        <div class="field field-attr">/api/health → system status</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">🗄️</span> Cache_Store</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> cache_key</div>
+        <div class="field field-attr">• _METRICS_CACHE → 30 sec TTL</div>
+        <div class="field field-attr">• _KP_CACHE → 60 sec TTL</div>
+        <div class="field field-attr">• _AURORA_CACHE → 300 sec TTL</div>
+        <div class="field field-attr">• _CME_LIVE_CACHE → 300 sec TTL</div>
+        <div class="field field-attr">• _ENLIL_CACHE → 3600 sec TTL</div>
+        <div class="field field-attr">• _SOLAR_CYCLE_CACHE → 3600 sec</div>
+        <div class="field field-attr">• Storage: In-memory (dict)</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">🔍</span> Data_Quality</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> check_id</div>
+        <div class="field field-attr">• stale_minutes <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">• max_gap_minutes <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">• missing_pct <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">• drift_score <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">• drift_features <span class="type-badge">ARRAY</span></div>
+        <div class="field field-attr">• ok <span class="type-badge">BOOL</span></div>
+        <div class="field field-attr">File: data_quality.py</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">⚙️</span> App_Config</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> config_key</div>
+        <div class="field field-attr">• api_key <span class="type-badge">ENV</span></div>
+        <div class="field field-attr">• require_api_key <span class="type-badge">BOOL</span></div>
+        <div class="field field-attr">• rate_limit_rps: 5.0</div>
+        <div class="field field-attr">• cache_ttl_sec: 30</div>
+        <div class="field field-attr">• request_timeout_sec: 20</div>
+        <div class="field field-attr">• quality_window_min: 360</div>
+        <div class="field field-attr">File: config.py + .env</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">🛰️</span> Satellite_Config</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> sat_id</div>
+        <div class="field field-attr">• name <span class="type-badge">VARCHAR</span></div>
+        <div class="field field-attr">• mass_kg <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">• area_m2 <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">• cd (drag coefficient) <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">• alt_km <span class="type-badge">FLOAT</span></div>
+        <div class="field field-attr">Presets: CubeSat 3U/6U, SmallSat, LEO</div>
+        <div class="field field-attr">File: configs/satellites.json</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ARROW -->
+  <div class="arrow-row">
+    <div class="arrow"><div class="arrow-label">HTTP JSON responses</div><div class="arrow-line"></div><div class="arrow-head"></div></div>
+    <div class="arrow"><div class="arrow-label">fetch() calls</div><div class="arrow-line"></div><div class="arrow-head"></div></div>
+    <div class="arrow"><div class="arrow-label">Next.js rewrites</div><div class="arrow-line"></div><div class="arrow-head"></div></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  LAYER 5 — FRONTEND / UI                              -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="layer l-ui">
+    <div class="layer-label">Frontend / UI</div>
+    <div class="layer-body">
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">🖥️</span> Dashboard_Main</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> page: index.html</div>
+        <div class="field field-attr">• Alert Banner (Normal/Elevated/Severe)</div>
+        <div class="field field-attr">• Storm Risk Gauge (animated)</div>
+        <div class="field field-attr">• Kp Index Card + bar</div>
+        <div class="field field-attr">• SYM/H Card + trend arrow</div>
+        <div class="field field-attr">• Flare Risk + class chip</div>
+        <div class="field field-attr">• SEP/Radiation S-scale</div>
+        <div class="field field-attr">• Live Solar Wind (Bz/Speed/Density)</div>
+        <div class="field field-attr">Stack: HTML5 + CSS3 + Vanilla JS</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">📈</span> Chart_Panels</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> chart_id</div>
+        <div class="field field-attr">• Last 12h: SYM/H, Bz, Speed</div>
+        <div class="field field-attr">• Dst Observed vs Predicted</div>
+        <div class="field field-attr">• 72-hour Dst Forecast</div>
+        <div class="field field-attr">• 30-day Outlook band</div>
+        <div class="field field-attr">• ML 7-day Solar Wind</div>
+        <div class="field field-attr">• WSA-Enlil 96-hour</div>
+        <div class="field field-attr">• CME Climatology bar chart</div>
+        <div class="field field-attr">Renderer: Canvas API (custom, no lib)</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">🌌</span> Aurora_Panel</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> panel_id: aurora</div>
+        <div class="field field-attr">• North Nowcast (OVATION image)</div>
+        <div class="field field-attr">• South Nowcast (OVATION image)</div>
+        <div class="field field-attr">• North Forecast</div>
+        <div class="field field-attr">• South Forecast</div>
+        <div class="field field-attr">• ML risk label overlay</div>
+        <div class="field field-attr">Source: NOAA SWPC live images</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">📡</span> GPS_SatCom_Panel</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> panel_id: gps</div>
+        <div class="field field-attr">• Single-freq accuracy estimate</div>
+        <div class="field field-attr">• Dual-freq accuracy estimate</div>
+        <div class="field field-attr">• Ionospheric TEC impact</div>
+        <div class="field field-attr">• Scintillation risk</div>
+        <div class="field field-attr">• UHF/SHF link quality</div>
+        <div class="field field-attr">• Outage probability (24h)</div>
+        <div class="field field-attr">Method: Heuristic from storm/Kp/SEP</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">🖼️</span> Solar_Gallery</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> panel_id: gallery</div>
+        <div class="field field-attr">• SDO HMI 4500 (sunspots)</div>
+        <div class="field field-attr">• SDO AIA 193 (coronal holes)</div>
+        <div class="field field-attr">• SDO AIA 131 (flares)</div>
+        <div class="field field-attr">• ACE 2-hour solar wind plot</div>
+        <div class="field field-attr">• CCOR-1 CME coronagraph</div>
+        <div class="field field-attr">• Boulder magnetometer</div>
+        <div class="field field-attr">• Geospace Kp/Dst overview</div>
+        <div class="field field-attr">• GONG synoptic map</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">⚛️</span> Next.js_App</div>
+        <div class="field field-pk"><span class="pk-badge">PK</span> framework: Next.js 14</div>
+        <div class="field field-attr">• React 18 components</div>
+        <div class="field field-attr">• App router (app/)</div>
+        <div class="field field-attr">• Pages: aurora, cme, flares</div>
+        <div class="field field-attr">• kp-dst, magnetometers</div>
+        <div class="field field-attr">• protons, solar-wind</div>
+        <div class="field field-attr">• API proxy rewrites</div>
+        <div class="field field-attr">• CSP security headers</div>
+        <div class="field field-attr">Deploy: Vercel</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ARROW -->
+  <div class="arrow-row">
+    <div class="arrow"><div class="arrow-label">Docker build</div><div class="arrow-line"></div><div class="arrow-head"></div></div>
+    <div class="arrow"><div class="arrow-label">Vercel deploy</div><div class="arrow-line"></div><div class="arrow-head"></div></div>
+    <div class="arrow"><div class="arrow-label">Nginx proxy</div><div class="arrow-line"></div><div class="arrow-head"></div></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  LAYER 6 — INFRASTRUCTURE                             -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="layer l-infra">
+    <div class="layer-label">Infrastructure</div>
+    <div class="layer-body">
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">🐳</span> Docker</div>
+        <div class="field field-attr">• Containerizes API server + models</div>
+        <div class="field field-attr">• Base: python:3.12-slim</div>
+        <div class="field field-attr">• Mounts: data/, models_deploy/</div>
+        <div class="field field-attr">• Env: API_KEY, DATA_DIR, MODEL_DIR</div>
+        <div class="field field-attr">• Port: 8000 exposed</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">☸️</span> Kubernetes</div>
+        <div class="field field-attr">• Deployment: api-server pod</div>
+        <div class="field field-attr">• Service: ClusterIP / LoadBalancer</div>
+        <div class="field field-attr">• HPA: auto-scale on CPU/mem</div>
+        <div class="field field-attr">• Rolling updates (zero downtime)</div>
+        <div class="field field-attr">• Health: /api/health liveness probe</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">🔄</span> Cron_Scheduler</div>
+        <div class="field field-attr">• Every 1 min: update_live_omni.py</div>
+        <div class="field field-attr">• Appends to omni_live.csv</div>
+        <div class="field field-attr">• Backfill: last 60 min overlap</div>
+        <div class="field field-attr">• Log: logs/live_update.log</div>
+        <div class="field field-attr">File: configs/cron.example</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">🌐</span> Nginx_Proxy</div>
+        <div class="field field-attr">• HTTPS termination (SSL)</div>
+        <div class="field field-attr">• Reverse proxy → :8000</div>
+        <div class="field field-attr">• Gzip compression</div>
+        <div class="field field-attr">• Static file serving</div>
+        <div class="field field-attr">• Rate limiting headers</div>
+        <div class="field field-attr">File: configs/nginx.conf</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">▲</span> Vercel</div>
+        <div class="field field-attr">• Next.js frontend hosting</div>
+        <div class="field field-attr">• Edge network (CDN)</div>
+        <div class="field field-attr">• API_PROXY_TARGET env var</div>
+        <div class="field field-attr">• Serverless functions (api/)</div>
+        <div class="field field-attr">• Auto HTTPS</div>
+        <div class="field field-attr">File: vercel.json</div>
+      </div>
+
+      <div class="entity">
+        <div class="entity-title"><span class="entity-icon">🔁</span> CI/CD</div>
+        <div class="field field-attr">• GitHub Actions (.github/workflows/)</div>
+        <div class="field field-attr">• ci.yml: lint + test on push</div>
+        <div class="field field-attr">• tests/test_api_health.py</div>
+        <div class="field field-attr">• tests/test_data_quality.py</div>
+        <div class="field field-attr">• tests/test_model_registry.py</div>
+        <div class="field field-attr">• requirements-ci.txt</div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- end diagram -->
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!--  RELATIONSHIPS SECTION                                    -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div style="max-width:1300px;margin:40px auto 0;">
+  <div class="section-header"><span>📌 Entity Relationships</span></div>
+  <hr class="divider"/>
+  <div class="rel-row">
+    <div class="rel-badge one-many">OMNI_Solar_Wind ──1:N──▶ ML_Dataset</div>
+    <div class="rel-badge one-many">Flare_Reports ──1:N──▶ ML_Dataset (label)</div>
+    <div class="rel-badge one-one">ML_Dataset ──1:1──▶ Parquet_Shards</div>
+    <div class="rel-badge one-many">Parquet_Shards ──1:N──▶ Storm_Risk_Model</div>
+    <div class="rel-badge one-many">Parquet_Shards ──1:N──▶ SYM/H_Regression</div>
+    <div class="rel-badge one-many">Parquet_Shards ──1:N──▶ Flare_Risk_Model</div>
+    <div class="rel-badge one-many">JB2008_Indices ──1:N──▶ Drag_Dataset</div>
+    <div class="rel-badge one-many">Drag_Dataset ──1:N──▶ Drag_DTC_Model</div>
+    <div class="rel-badge one-many">Spacecraft_Anomalies ──1:N──▶ Sat_Impact_Dataset</div>
+    <div class="rel-badge one-many">Sat_Impact_Dataset ──1:N──▶ Sat_Impact_Model</div>
+    <div class="rel-badge one-many">CME_Events ──1:N──▶ CME_Impact_Dataset</div>
+    <div class="rel-badge one-many">CME_Impact_Dataset ──1:N──▶ CME_Impact_Model</div>
+    <div class="rel-badge one-many">OMNI_Solar_Wind ──1:N──▶ Dst_LSTM_Attention</div>
+    <div class="rel-badge one-many">Kyoto_Dst ──1:N──▶ Dst_LSTM_Attention</div>
+    <div class="rel-badge one-many">All Models ──N:1──▶ Model_Registry</div>
+    <div class="rel-badge one-one">Live_OMNI_CSV ──1:1──▶ API_Server (inference input)</div>
+    <div class="rel-badge one-one">API_Server ──1:1──▶ Cache_Store</div>
+    <div class="rel-badge one-many">API_Server ──1:N──▶ API_Endpoints</div>
+    <div class="rel-badge one-many">API_Endpoints ──1:N──▶ Dashboard_Main</div>
+    <div class="rel-badge one-many">API_Endpoints ──1:N──▶ Chart_Panels</div>
+    <div class="rel-badge one-one">Satellite_Config ──1:1──▶ Drag_DTC_Model (runtime input)</div>
+    <div class="rel-badge one-one">App_Config ──1:1──▶ API_Server</div>
+    <div class="rel-badge one-one">Docker ──1:1──▶ API_Server</div>
+    <div class="rel-badge one-many">Kubernetes ──1:N──▶ Docker</div>
+    <div class="rel-badge one-one">Cron_Scheduler ──1:1──▶ Live_OMNI_CSV</div>
+    <div class="rel-badge one-one">Nginx_Proxy ──1:1──▶ API_Server</div>
+    <div class="rel-badge one-one">Vercel ──1:1──▶ Next.js_App</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!--  DATA FLOW SVG                                            -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div style="max-width:1300px;margin:40px auto 0;">
+  <div class="section-header"><span>🔄 Real-Time Data Flow</span></div>
+  <hr class="divider"/>
+  <div class="flow-wrap">
+    <svg class="flow" viewBox="0 0 1100 220" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#475569"/>
+        </marker>
+        <marker id="arr-live" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#22d3ee"/>
+        </marker>
+      </defs>
+
+      <!-- Boxes -->
+      <!-- Sun -->
+      <rect x="10" y="80" width="110" height="60" rx="10" fill="#1a2535" stroke="#f6c45f" stroke-width="1.5"/>
+      <text x="65" y="106" text-anchor="middle" fill="#f6c45f" font-size="11" font-weight="bold">☀️ Sun</text>
+      <text x="65" y="122" text-anchor="middle" fill="#64748b" font-size="9">Solar Wind</text>
+      <text x="65" y="134" text-anchor="middle" fill="#64748b" font-size="9">400–800 km/s</text>
+
+      <!-- NOAA/NASA Sat -->
+      <rect x="160" y="80" width="130" height="60" rx="10" fill="#1a2535" stroke="#60a5fa" stroke-width="1.5"/>
+      <text x="225" y="106" text-anchor="middle" fill="#60a5fa" font-size="11" font-weight="bold">🛰️ ACE/DSCOVR</text>
+      <text x="225" y="122" text-anchor="middle" fill="#64748b" font-size="9">L1 Point Satellite</text>
+      <text x="225" y="134" text-anchor="middle" fill="#64748b" font-size="9">NOAA SWPC Feed</text>
+
+      <!-- Live Updater -->
+      <rect x="340" y="80" width="130" height="60" rx="10" fill="#1a2535" stroke="#c084fc" stroke-width="1.5"/>
+      <text x="405" y="106" text-anchor="middle" fill="#c084fc" font-size="11" font-weight="bold">⚙️ update_live</text>
+      <text x="405" y="122" text-anchor="middle" fill="#64748b" font-size="9">_omni.py</text>
+      <text x="405" y="134" text-anchor="middle" fill="#64748b" font-size="9">Every 1 minute</text>
+
+      <!-- omni_live.csv -->
+      <rect x="520" y="80" width="120" height="60" rx="10" fill="#1a2535" stroke="#4ade80" stroke-width="1.5"/>
+      <text x="580" y="106" text-anchor="middle" fill="#4ade80" font-size="11" font-weight="bold">📄 omni_live</text>
+      <text x="580" y="122" text-anchor="middle" fill="#64748b" font-size="9">.csv</text>
+      <text x="580" y="134" text-anchor="middle" fill="#64748b" font-size="9">Append-only</text>
+
+      <!-- server.py -->
+      <rect x="690" y="80" width="120" height="60" rx="10" fill="#1a2535" stroke="#fbbf24" stroke-width="1.5"/>
+      <text x="750" y="106" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="bold">🖥️ server.py</text>
+      <text x="750" y="122" text-anchor="middle" fill="#64748b" font-size="9">Load models</text>
+      <text x="750" y="134" text-anchor="middle" fill="#64748b" font-size="9">Run inference</text>
+
+      <!-- Dashboard -->
+      <rect x="860" y="80" width="120" height="60" rx="10" fill="#1a2535" stroke="#22d3ee" stroke-width="1.5"/>
+      <text x="920" y="106" text-anchor="middle" fill="#22d3ee" font-size="11" font-weight="bold">🌐 Dashboard</text>
+      <text x="920" y="122" text-anchor="middle" fill="#64748b" font-size="9">Web Browser</text>
+      <text x="920" y="134" text-anchor="middle" fill="#64748b" font-size="9">Live charts</text>
+
+      <!-- Arrows -->
+      <line x1="120" y1="110" x2="158" y2="110" stroke="#475569" stroke-width="1.5" marker-end="url(#arr)"/>
+      <line x1="290" y1="110" x2="338" y2="110" stroke="#475569" stroke-width="1.5" marker-end="url(#arr)"/>
+      <line x1="470" y1="110" x2="518" y2="110" stroke="#475569" stroke-width="1.5" marker-end="url(#arr)"/>
+      <line x1="640" y1="110" x2="688" y2="110" stroke="#475569" stroke-width="1.5" marker-end="url(#arr)"/>
+      <line x1="810" y1="110" x2="858" y2="110" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arr-live)"/>
+
+      <!-- Labels on arrows -->
+      <text x="139" y="104" text-anchor="middle" fill="#334155" font-size="9">particles</text>
+      <text x="314" y="104" text-anchor="middle" fill="#334155" font-size="9">HTTP JSON</text>
+      <text x="494" y="104" text-anchor="middle" fill="#334155" font-size="9">CSV rows</text>
+      <text x="664" y="104" text-anchor="middle" fill="#334155" font-size="9">features</text>
+      <text x="834" y="104" text-anchor="middle" fill="#22d3ee" font-size="9">predictions</text>
+
+      <!-- Bottom flow labels -->
+      <text x="65" y="170" text-anchor="middle" fill="#334155" font-size="9">3–4 days travel</text>
+      <text x="225" y="170" text-anchor="middle" fill="#334155" font-size="9">1-min resolution</text>
+      <text x="405" y="170" text-anchor="middle" fill="#334155" font-size="9">cron job</text>
+      <text x="580" y="170" text-anchor="middle" fill="#334155" font-size="9">rolling window</text>
+      <text x="750" y="170" text-anchor="middle" fill="#334155" font-size="9">&lt;10ms inference</text>
+      <text x="920" y="170" text-anchor="middle" fill="#22d3ee" font-size="9">15-min refresh</text>
+
+      <!-- Models box below server -->
+      <rect x="690" y="170" width="120" height="40" rx="8" fill="rgba(74,222,128,0.1)" stroke="#4ade80" stroke-width="1"/>
+      <text x="750" y="186" text-anchor="middle" fill="#4ade80" font-size="10">🤖 ML Models</text>
+      <text x="750" y="200" text-anchor="middle" fill="#64748b" font-size="9">LightGBM + LSTM</text>
+      <line x1="750" y1="170" x2="750" y2="142" stroke="#4ade80" stroke-width="1" stroke-dasharray="3,3"/>
+    </svg>
+  </div>
+</div>
+
+<div style="text-align:center;margin-top:40px;color:#334155;font-size:12px;">
+  Space Weather Sentinel — ER & Architecture Diagram &nbsp;|&nbsp; June 2026
+</div>
+
+</body>
+</html>
