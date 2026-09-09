@@ -2,10 +2,10 @@
 
 # SolarWind-Forecaster
 
-**A data science pipeline and LightGBM model for 15-minute forecasting of geomagnetic storm risk using massive NASA/NOAA datasets.**
+**A data science pipeline and Scikit-learn Gradient Boosting model for 15-minute forecasting of geomagnetic storm risk using massive NASA/NOAA datasets.**
 
 [![Python](https://img.shields.io/badge/Python-3.x-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![LightGBM](https://img.shields.io/badge/LightGBM-Gradient%20Boosting-ff69b4?style=for-the-badge&logo=jupyter&logoColor=white)](https://lightgbm.readthedocs.io/)
+[![Scikit-learn](https://img.shields.io/badge/Scikit--learn-Gradient%20Boosting-F7931E?style=for-the-badge&logo=scikitlearn&logoColor=white)](https://scikit-learn.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io/)
 [![Pandas](https://img.shields.io/badge/Pandas-Data%20Analysis-150458?style=for-the-badge&logo=pandas&logoColor=white)](https://pandas.pydata.org/)
 
@@ -15,7 +15,7 @@
 
 ## Architecture Overview
 
-Developed as a highly robust Data Science portfolio project, this repository implements a complete machine learning pipeline for predicting severe space weather events (geomagnetic storms). It processes decades of high-resolution solar wind data from NASA and NOAA, builds complex time-series features, trains a LightGBM regressor using out-of-core techniques to handle memory constraints, and visualizes the results via an interactive Streamlit dashboard.
+Developed as a highly robust Data Science portfolio project, this repository implements a complete machine learning pipeline for predicting severe space weather events (geomagnetic storms). It processes decades of high-resolution solar wind data from NASA and NOAA, builds complex time-series features, trains a Scikit-learn Gradient Boosting regressor, and visualizes the results via an interactive Streamlit dashboard.
 
 ---
 
@@ -34,9 +34,9 @@ graph TD
     E --> F[dataset.csv]
     end
     
-    subgraph "Out-of-Core Training"
-    F --> G(Create Parquet Shards)
-    G --> H{LightGBM Regressor}
+    subgraph "Model Training"
+    F --> G(Train/Test Split)
+    G --> H{Gradient Boosting Regressor}
     H -->|Hyperparameter Tuning| I[models/symh_model.joblib]
     end
     
@@ -60,7 +60,7 @@ graph TD
 |---|---|
 | **Data Ingestion** | Handles massive, highly-dimensional JSON and CSV dumps from standard government APIs (NASA/NOAA). |
 | **Feature Engineering** | Generates overlapping rolling windows (e.g., 15-min, 60-min means/stds) to give the models historical context. |
-| **Out-of-Core Training** | Solves memory limitation issues by sharding the 30-year dataset into smaller Parquet files and streaming them through LightGBM. |
+| **Model Training** | Trains a Scikit-learn Gradient Boosting regressor on decades of processed solar wind telemetry data. |
 | **Streamlit Dashboard** | Provides a modern, reactive interface to perform Exploratory Data Analysis (EDA) and run real-time inference. |
 
 ---
@@ -69,8 +69,8 @@ graph TD
 
 | Component | Technologies |
 |:---|:---|
-| **Machine Learning** | `LightGBM`, `Scikit-Learn`, `Joblib` |
-| **Data Engineering** | `Pandas`, `PyArrow (Parquet)`, `NumPy` |
+| **Machine Learning** | `Scikit-learn` (Gradient Boosting), `Joblib` |
+| **Data Engineering** | `Pandas`, `NumPy`, `Matplotlib` |
 | **Visualizations** | `Matplotlib`, `Seaborn`, `Streamlit` |
 | **Automation** | `GitHub Actions (CI/CD)`, `Makefile` |
 
@@ -89,8 +89,8 @@ SolarWind-Forecaster/
 ├── src/                        # Core Python ML Pipeline
 │   ├── data_ingestion.py       # Download and parse logic
 │   ├── feature_engineering.py  # Rolling windows and temporal feature creation
-│   ├── data_sharding.py        # Parquet shard creation
-│   ├── model_training.py       # Out-of-core LightGBM training loop
+│   ├── data_sharding.py        # Data splitting and preparation
+│   ├── model_training.py       # Gradient Boosting training loop
 │   ├── model_inference.py      # Real-time prediction wrappers
 │   └── experiments/            # Experimental scripts (LSTMs, Drag models)
 ├── tests/                      # Unit tests
