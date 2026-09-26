@@ -13,9 +13,13 @@
 
 ---
 
-## Architecture Overview
+## Overview
 
 Engineered a time-series forecasting model to predict renewable energy generation from solar and wind sources. Implemented rolling window features and lag variables using Scikit-learn and Pandas, adhering to strict temporal train/test splitting principles to prevent data leakage. Deployed via an interactive Streamlit dashboard.
+
+---
+
+## Architecture Overview
 
 ---
 
