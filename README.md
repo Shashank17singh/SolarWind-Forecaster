@@ -21,10 +21,6 @@ Engineered a time-series forecasting model to predict renewable energy generatio
 
 ## Architecture Overview
 
----
-
-### Data Science Pipeline
-
 ```mermaid
 graph TD
     subgraph "Data Ingestion"
