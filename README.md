@@ -15,7 +15,7 @@
 
 ## Architecture Overview
 
-Engineered a complete machine learning pipeline for predicting severe space weather events (geomagnetic storms). It processes decades of high-resolution solar wind data from NASA and NOAA, builds complex time-series features, trains a Scikit-learn Gradient Boosting regressor, and visualizes the results via an interactive Streamlit dashboard.
+Engineered a time-series forecasting model to predict renewable energy generation from solar and wind sources. Implemented rolling window features and lag variables using Scikit-learn and Pandas, adhering to strict temporal train/test splitting principles to prevent data leakage. Deployed via an interactive Streamlit dashboard.
 
 ---
 
