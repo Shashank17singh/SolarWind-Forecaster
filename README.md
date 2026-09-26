@@ -15,7 +15,7 @@
 
 ## Architecture Overview
 
-Developed as a highly robust Data Science portfolio project, this repository implements a complete machine learning pipeline for predicting severe space weather events (geomagnetic storms). It processes decades of high-resolution solar wind data from NASA and NOAA, builds complex time-series features, trains a Scikit-learn Gradient Boosting regressor, and visualizes the results via an interactive Streamlit dashboard.
+Engineered a complete machine learning pipeline for predicting severe space weather events (geomagnetic storms). It processes decades of high-resolution solar wind data from NASA and NOAA, builds complex time-series features, trains a Scikit-learn Gradient Boosting regressor, and visualizes the results via an interactive Streamlit dashboard.
 
 ---
 
