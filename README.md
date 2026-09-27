@@ -154,3 +154,9 @@ This repository is equipped with a GitHub Actions workflow (`.github/workflows/c
 1. **Formatting Checks**: Ensures compliance with `black` and `isort`.
 2. **Linting**: Runs `flake8` to catch syntax errors and undefined variables.
 3. **Unit Tests**: Executes the `pytest` suite inside the `tests/` directory.
+
+
+---
+
+## Deployment
+- **Dashboard URL:** https://solarwind-forecaster.streamlit.app/
