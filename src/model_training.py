@@ -32,7 +32,6 @@ def _load_sample_from_shards(files: list[Path], feature_cols: list[str], max_row
             break
         df = pd.read_parquet(path)
         
-        # Take a subset to avoid memory explosion if the shard is huge
         if len(df) > max_rows // len(files):
             df = df.sample(n=max_rows // len(files), random_state=seed)
             
@@ -99,7 +98,6 @@ def train_gradient_boosting(
     X_val = val_df[feature_cols].fillna(0).to_numpy(dtype=np.float32)
     X_test = test_df[feature_cols].fillna(0).to_numpy(dtype=np.float32)
 
-    # SYM-H Regressor
     y_symh_train = pd.to_numeric(train_df["symh_future"], errors="coerce").fillna(0).astype("float32").to_numpy()
     y_symh_val = pd.to_numeric(val_df["symh_future"], errors="coerce").fillna(0).astype("float32").to_numpy()
     y_symh_test = pd.to_numeric(test_df["symh_future"], errors="coerce").fillna(0).astype("float32").to_numpy()
@@ -113,7 +111,6 @@ def train_gradient_boosting(
     )
     symh_model.fit(X_train, y_symh_train)
 
-    # Storm Risk Classifier
     y_storm_train = pd.to_numeric(train_df["storm_risk"], errors="coerce").fillna(0).astype("int8").to_numpy()
     y_storm_val = pd.to_numeric(val_df["storm_risk"], errors="coerce").fillna(0).astype("int8").to_numpy()
     y_storm_test = pd.to_numeric(test_df["storm_risk"], errors="coerce").fillna(0).astype("int8").to_numpy()
