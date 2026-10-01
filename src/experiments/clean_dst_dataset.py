@@ -2,10 +2,8 @@ import argparse
 import json
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
-
-from train_dst_lstm_attention import FEATURE_COLS, DERIVED_FEATURES
+from train_dst_lstm_attention import DERIVED_FEATURES, FEATURE_COLS
 
 
 def _hourly_omni(path: Path, feature_cols: list[str]) -> pd.DataFrame:

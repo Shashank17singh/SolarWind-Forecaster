@@ -1,10 +1,11 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 import os
 import sys
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import streamlit as st
 
 sys.path.append(os.path.abspath("."))
 
@@ -102,12 +103,14 @@ def load_data():
         return df
     except FileNotFoundError:
         dates = pd.date_range(end=pd.Timestamp.utcnow(), periods=2000, freq="1min")
-        df = pd.DataFrame({
-            "timestamp": dates,
-            "sym_h": np.random.normal(-15, 20, 2000),
-            "bz_gsm": np.random.normal(0, 5, 2000),
-            "speed": np.random.normal(450, 50, 2000)
-        })
+        df = pd.DataFrame(
+            {
+                "timestamp": dates,
+                "sym_h": np.random.normal(-15, 20, 2000),
+                "bz_gsm": np.random.normal(0, 5, 2000),
+                "speed": np.random.normal(450, 50, 2000),
+            }
+        )
         df.loc[1500:1600, "sym_h"] = np.random.normal(-80, 10, 101)
         return df
 
@@ -134,7 +137,9 @@ if view_mode == "Data Exploration (EDA)":
 
         st.subheader("Recent Solar Wind Trends")
 
-        recent_df = df.tail(1000).reset_index(drop=True if df.index.name != "timestamp" else False)
+        recent_df = df.tail(1000).reset_index(
+            drop=True if df.index.name != "timestamp" else False
+        )
         if "timestamp" not in recent_df.columns:
             recent_df = recent_df.reset_index()
         st.line_chart(recent_df, x="timestamp", y=["sym_h", "bz_gsm"])
@@ -158,7 +163,10 @@ elif view_mode == "Forecasting Dashboard":
         st.subheader("Model Prediction")
         try:
             if not os.path.exists("models/storm_model.joblib"):
-                preds = {"storm_risk_prob": round(np.random.uniform(0.1, 0.9), 2), "predicted_sym_h": round(np.random.normal(-30, 20), 2)}
+                preds = {
+                    "storm_risk_prob": round(np.random.uniform(0.1, 0.9), 2),
+                    "predicted_sym_h": round(np.random.normal(-30, 20), 2),
+                }
             else:
                 from src.model_inference import predict
 

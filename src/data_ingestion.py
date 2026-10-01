@@ -1,5 +1,6 @@
 import argparse
 import os
+
 import numpy as np
 import pandas as pd
 
@@ -107,15 +108,10 @@ MISSING_VALUES = {
     9999.9,
     999.99,
     999.9,
-    999.99,
     999.0,
     9999.0,
     99999.0,
     9999999.0,
-    9999999,
-    99999,
-    9999,
-    999,
     -99999.9,
     -9999.99,
     -9999.9,

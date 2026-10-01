@@ -6,7 +6,6 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 from openpyxl import load_workbook
-
 from train_dst_lstm_attention import FEATURE_COLS, _load_hourly_omni
 
 
@@ -37,7 +36,7 @@ def _load_goes_exis_events(xlsx_path: str) -> list[pd.Timestamp]:
 
 def _load_ncei_xls_events(xls_path: str) -> list[pd.Timestamp]:
     try:
-        import xlrd
+        pass
     except Exception:
         print(
             f"[impact] xlrd not available; cannot read {xls_path}. "
@@ -70,7 +69,6 @@ def _load_ncei_xls_events(xls_path: str) -> list[pd.Timestamp]:
                         continue
                     time = pd.to_datetime(t, errors="coerce")
                     if pd.isna(time):
-
                         try:
                             hhmm = int(t)
                             hour = hhmm // 100
@@ -104,7 +102,6 @@ def _load_ncei_xls_events(xls_path: str) -> list[pd.Timestamp]:
             for d in dates.dropna():
                 events.append(pd.Timestamp(d))
     else:
-
         for col in df.columns:
             parsed = pd.to_datetime(df[col], errors="coerce")
             if parsed.notna().sum() > 10:
@@ -170,7 +167,7 @@ def build_dataset(
 
     labels = _label_events(df.index, events, horizon_hours)
     df = df.copy()
-    df["sat_impact_next_{:d}h".format(horizon_hours)] = labels
+    df[f"sat_impact_next_{horizon_hours:d}h"] = labels
 
     os.makedirs(os.path.dirname(out_csv), exist_ok=True)
     df.to_csv(out_csv, index_label="time")

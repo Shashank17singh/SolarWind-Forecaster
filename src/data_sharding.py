@@ -1,5 +1,4 @@
 import argparse
-import os
 from pathlib import Path
 
 import pandas as pd
@@ -99,9 +98,7 @@ def shard_dataset(
         test_idx = _write_part(test_chunk, test_dir, test_idx, compression)
 
         print(
-            "[shard] chunk {i}: train={t} val={v} test={s}".format(
-                i=i, t=len(train_chunk), v=len(val_chunk), s=len(test_chunk)
-            ),
+            f"[shard] chunk {i}: train={len(train_chunk)} val={len(val_chunk)} test={len(test_chunk)}",
             flush=True,
         )
 

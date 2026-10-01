@@ -1,7 +1,7 @@
 import argparse
 import json
 import sys
-from urllib.request import urlopen, Request
+from urllib.request import Request, urlopen
 
 
 def main():
