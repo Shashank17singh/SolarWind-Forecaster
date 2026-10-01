@@ -27,28 +27,28 @@ graph TD
     A[NASA OMNIWeb 1-min Data] -->|Download & Clean| B(omni.csv)
     C[NOAA XRS Flare Data] -->|Parse Reports| D(flare_reports.csv)
     end
-    
+
     subgraph "Feature Engineering"
     B --> E{Generate Rolling Windows}
     D --> E
     E --> F[dataset.csv]
     end
-    
+
     subgraph "Model Training"
     F --> G(Train/Test Split)
     G --> H{Gradient Boosting Regressor}
     H -->|Hyperparameter Tuning| I[models/symh_model.joblib]
     end
-    
+
     subgraph "Inference & UI"
     I --> J[Streamlit Dashboard]
     J -->|Real-Time Predictions| K[Geomagnetic Storm Risk %]
     end
-    
+
     classDef io fill:#f9f0ff,stroke:#8a2be2,stroke-width:2px,color:#000;
     classDef core fill:#e1f5fe,stroke:#0288d1,stroke-width:2px,color:#000;
     classDef logic fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#000;
-    
+
     class A,C,K io;
     class B,D,F,G,I core;
     class E,H,J logic;
@@ -56,23 +56,23 @@ graph TD
 
 ## Features
 
-| Stage | Description |
-|---|---|
-| **Data Ingestion** | Handles massive, highly-dimensional JSON and CSV dumps from standard government APIs (NASA/NOAA). |
+| Stage                   | Description                                                                                                    |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Data Ingestion**      | Handles massive, highly-dimensional JSON and CSV dumps from standard government APIs (NASA/NOAA).              |
 | **Feature Engineering** | Generates overlapping rolling windows (e.g., 15-min, 60-min means/stds) to give the models historical context. |
-| **Model Training** | Trains a Scikit-learn Gradient Boosting regressor on decades of processed solar wind telemetry data. |
-| **Streamlit Dashboard** | Provides a modern, reactive interface to perform Exploratory Data Analysis (EDA) and run real-time inference. |
+| **Model Training**      | Trains a Scikit-learn Gradient Boosting regressor on decades of processed solar wind telemetry data.           |
+| **Streamlit Dashboard** | Provides a modern, reactive interface to perform Exploratory Data Analysis (EDA) and run real-time inference.  |
 
 ---
 
 ## Technology Stack
 
-| Component | Technologies |
-|:---|:---|
+| Component            | Technologies                                 |
+| :------------------- | :------------------------------------------- |
 | **Machine Learning** | `Scikit-learn` (Gradient Boosting), `Joblib` |
-| **Data Engineering** | `Pandas`, `NumPy`, `Matplotlib` |
-| **Visualizations** | `Matplotlib`, `Seaborn`, `Streamlit` |
-| **Automation** | `GitHub Actions (CI/CD)`, `Makefile` |
+| **Data Engineering** | `Pandas`, `NumPy`, `Matplotlib`              |
+| **Visualizations**   | `Matplotlib`, `Seaborn`, `Streamlit`         |
+| **Automation**       | `GitHub Actions (CI/CD)`, `Makefile`         |
 
 ---
 
@@ -151,35 +151,35 @@ The app will open automatically in your browser at `http://localhost:8501`.
 ## CI/CD Pipeline
 
 This repository is equipped with a GitHub Actions workflow (`.github/workflows/ci.yml`). Every push to the `main` branch triggers:
+
 1. **Formatting Checks**: Ensures compliance with `black` and `isort`.
 2. **Linting**: Runs `flake8` to catch syntax errors and undefined variables.
 3. **Unit Tests**: Executes the `pytest` suite inside the `tests/` directory.
 
-
 ---
 
 ## Deployment
+
 - **Dashboard URL:** https://solarwind-forecaster.streamlit.app/
 
-
---- 
+---
 
 ## Deep Codebase Analysis
 
-| File | Purpose / Details |
-|---|---|
-| `app.py` | Core component logic and implementation details. |
-| `configs\dst_realtime_features.txt` | Core component logic and implementation details. |
-| `configs\feature_baseline.json` | Core component logic and implementation details. |
-| `configs\feature_spec.json` | Core component logic and implementation details. |
-| `configs\satellites.json` | Core component logic and implementation details. |
-| `models_deploy\cme_impact_model_meta.json` | Core component logic and implementation details. |
-| `models_deploy\dst_lstm_attention_meta.json` | Core component logic and implementation details. |
-| `models_deploy\registry.json` | Core component logic and implementation details. |
-| `models_deploy\sat_impact_model_meta.json` | Core component logic and implementation details. |
+| File                                          | Purpose / Details                                |
+| --------------------------------------------- | ------------------------------------------------ |
+| `app.py`                                      | Core component logic and implementation details. |
+| `configs\dst_realtime_features.txt`           | Core component logic and implementation details. |
+| `configs\feature_baseline.json`               | Core component logic and implementation details. |
+| `configs\feature_spec.json`                   | Core component logic and implementation details. |
+| `configs\satellites.json`                     | Core component logic and implementation details. |
+| `models_deploy\cme_impact_model_meta.json`    | Core component logic and implementation details. |
+| `models_deploy\dst_lstm_attention_meta.json`  | Core component logic and implementation details. |
+| `models_deploy\registry.json`                 | Core component logic and implementation details. |
+| `models_deploy\sat_impact_model_meta.json`    | Core component logic and implementation details. |
 | `models_deploy\solar_wind_lstm_24h_meta.json` | Core component logic and implementation details. |
-| `notebooks\eda.ipynb` | Core component logic and implementation details. |
-| `notebooks\feature_engineering.ipynb` | Core component logic and implementation details. |
-| `notebooks\model_training.ipynb` | Core component logic and implementation details. |
-| `reports\convert_to_pdf.py` | Core component logic and implementation details. |
-| `requirements-ci.txt` | Core component logic and implementation details. |
+| `notebooks\eda.ipynb`                         | Core component logic and implementation details. |
+| `notebooks\feature_engineering.ipynb`         | Core component logic and implementation details. |
+| `notebooks\model_training.ipynb`              | Core component logic and implementation details. |
+| `reports\convert_to_pdf.py`                   | Core component logic and implementation details. |
+| `requirements-ci.txt`                         | Core component logic and implementation details. |

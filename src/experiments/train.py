@@ -2,15 +2,16 @@ import argparse
 import os
 import time
 from datetime import datetime
+
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.metrics import roc_auc_score, average_precision_score, mean_absolute_error
+from model_registry import register_model
 from sklearn.ensemble import (
     HistGradientBoostingClassifier,
     HistGradientBoostingRegressor,
 )
-from model_registry import register_model
+from sklearn.metrics import average_precision_score, mean_absolute_error, roc_auc_score
 
 
 def time_split(df: pd.DataFrame, train_end: str, val_end: str):
@@ -58,7 +59,6 @@ def load_dataset(
         ),
         start=1,
     ):
-
         chunk = chunk[chunk["time"] != "time"].copy()
 
         chunk.loc[:, "time"] = pd.to_datetime(
@@ -150,7 +150,7 @@ def train_models(
         "train_end": train_end,
         "val_end": val_end,
         "feature_cols": feature_cols,
-        "rows": int(len(df)),
+        "rows": len(df),
     }
 
     print("[train] fitting storm classifier...", flush=True)

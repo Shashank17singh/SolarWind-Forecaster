@@ -32,7 +32,6 @@ def _parse_solfsmy(path: str) -> pd.DataFrame:
                 except ValueError:
                     continue
             else:
-
                 date_raw = line_strip[:8]
                 if not date_raw.isdigit():
                     continue

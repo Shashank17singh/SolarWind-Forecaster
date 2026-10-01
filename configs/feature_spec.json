@@ -53,13 +53,7 @@
       "bz_south",
       "bz_abs"
     ],
-    "derived_features": [
-      "v_np",
-      "v2_np",
-      "vbz_south",
-      "bz_south",
-      "bz_abs"
-    ],
+    "derived_features": ["v_np", "v2_np", "vbz_south", "bz_south", "bz_abs"],
     "notes": "Used by train_dst_lstm_attention.py and realtime inference"
   },
   "storm_features": {

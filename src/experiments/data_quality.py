@@ -1,12 +1,11 @@
 import json
 import os
-from datetime import datetime
 from collections import deque
+from datetime import datetime
 from io import StringIO
 
 import numpy as np
 import pandas as pd
-
 from config import CONFIG
 
 CRITICAL_COLS = ["bz_gsm", "flow_speed", "proton_density"]
@@ -88,7 +87,7 @@ def compute_quality(csv_path: str, window_min: int | None = None) -> dict:
     return {
         "ok": ok,
         "reason": ",".join(reasons) if reasons else "ok",
-        "rows": int(len(df)),
+        "rows": len(df),
         "stale_minutes": round(stale_minutes, 2),
         "max_gap_minutes": round(max_gap, 2),
         "missing_pct": round(missing_pct, 4) if missing_pct is not None else None,
@@ -136,7 +135,7 @@ def build_baseline(csv_path: str, output_path: str, feature_cols: list[str]):
     payload = {
         "generated_at": datetime.utcnow().isoformat(),
         "feature_stats": stats,
-        "rows": int(len(df)),
+        "rows": len(df),
     }
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2)

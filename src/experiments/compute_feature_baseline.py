@@ -2,8 +2,8 @@ import argparse
 import json
 import os
 
-from data_quality import build_baseline
 from config import CONFIG
+from data_quality import build_baseline
 
 
 def _load_feature_cols(path: str) -> list[str]:

@@ -2,8 +2,6 @@ import argparse
 import os
 
 import joblib
-import pandas as pd
-
 from build_drag_dataset import build_dataset
 
 

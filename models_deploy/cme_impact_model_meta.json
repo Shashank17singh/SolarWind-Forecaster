@@ -3,12 +3,24 @@
   "version": "20260207094145",
   "train_end": "2023-12-31",
   "feature_cols": [
-    "cme_speed", "cme_width", "cme_lat", "cme_lon",
-    "halo", "pa", "mpa",
-    "bz_gsm", "flow_speed", "proton_density", "flow_pressure"
+    "cme_speed",
+    "cme_width",
+    "cme_lat",
+    "cme_lon",
+    "halo",
+    "pa",
+    "mpa",
+    "bz_gsm",
+    "flow_speed",
+    "proton_density",
+    "flow_pressure"
   ],
   "transit_feature_cols": [
-    "cme_speed", "cme_width", "cme_lat", "cme_lon", "halo"
+    "cme_speed",
+    "cme_width",
+    "cme_lat",
+    "cme_lon",
+    "halo"
   ],
   "target_col": "earth_impact",
   "transit_target_col": "transit_hours",

@@ -4,7 +4,7 @@ import tempfile
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from model_registry import register_model, list_models
+from model_registry import list_models, register_model
 
 
 def test_register_and_list_models():

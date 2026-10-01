@@ -1,8 +1,15 @@
+import time
+
+import joblib
 import numpy as np
 import pandas as pd
-import joblib
-import time
-from sklearn.metrics import roc_auc_score, average_precision_score, accuracy_score, mean_absolute_error, mean_squared_error
+from sklearn.metrics import (
+    accuracy_score,
+    average_precision_score,
+    mean_absolute_error,
+    mean_squared_error,
+    roc_auc_score,
+)
 
 DATA_CSV = "data/processed/dataset.csv"
 START = "2023-01-01"
@@ -89,7 +96,10 @@ for chunk in pd.read_csv(DATA_CSV, usecols=needed, chunksize=chunksize, dtype=st
 
     if chunk_id % 5 == 0:
         elapsed = time.time() - start_time
-        print(f"[eval] chunks={chunk_id} rows_total={rows_total} rows_2023={rows_used} elapsed={elapsed:.1f}s", flush=True)
+        print(
+            f"[eval] chunks={chunk_id} rows_total={rows_total} rows_2023={rows_used} elapsed={elapsed:.1f}s",
+            flush=True,
+        )
 
 if not storm_probs_list:
     raise SystemExit("No 2023 rows found in dataset.csv")
@@ -120,7 +130,9 @@ if flare_probs_list:
     flare_probs = np.concatenate(flare_probs_list)
     flare_y = np.concatenate(flare_y_list)
     print("Flare positives:", int(flare_y.sum()), "(%.6f%%)" % (100.0 * flare_y.mean()))
-    print("Flare accuracy:", accuracy_score(flare_y, (flare_probs >= 0.5).astype(np.int8)))
+    print(
+        "Flare accuracy:", accuracy_score(flare_y, (flare_probs >= 0.5).astype(np.int8))
+    )
     if len(np.unique(flare_y)) > 1:
         print("Flare ROC-AUC:", roc_auc_score(flare_y, flare_probs))
         print("Flare PR-AUC:", average_precision_score(flare_y, flare_probs))

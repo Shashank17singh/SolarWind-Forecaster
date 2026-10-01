@@ -2,9 +2,7 @@ import argparse
 import os
 
 import joblib
-import pandas as pd
-from sklearn.metrics import roc_auc_score, average_precision_score, mean_absolute_error
-
+from sklearn.metrics import average_precision_score, mean_absolute_error, roc_auc_score
 from train import load_dataset, time_split
 
 

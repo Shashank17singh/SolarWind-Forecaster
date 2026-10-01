@@ -1,4 +1,5 @@
 # Space Weather Forecasting System: A Comprehensive Machine Learning Approach
+
 # Extended Research Paper - Part 2
 
 <!-- Continuation from main paper -->
@@ -18,24 +19,28 @@ The primary data source for this research is the OMNI (Operating Missions as Nod
 ### 3.1.1 Key Measurements
 
 **Interplanetary Magnetic Field (IMF)**:
+
 - Magnetic field magnitude (B)
 - Components in GSE coordinates (Bx, By, Bz)
 - Components in GSM coordinates (By_GSM, Bz_GSM)
 - Standard deviations and RMS values
 
 **Solar Wind Plasma**:
+
 - Bulk velocity (V) and components (Vx, Vy, Vz)
 - Proton density (n_p)
 - Proton temperature (T_p)
 - Flow pressure (P_flow)
 
 **Derived Parameters**:
+
 - Electric field (E = -V × B)
 - Plasma beta (β)
 - Alfvén Mach number (M_A)
 - Magnetosonic Mach number (M_ms)
 
 **Geomagnetic Indices**:
+
 - SYM-H (1-minute Dst proxy)
 - ASY-H, ASY-D (asymmetric disturbance)
 - AE, AL, AU (auroral electrojet indices)
@@ -44,6 +49,7 @@ The primary data source for this research is the OMNI (Operating Missions as Nod
 ### 3.1.2 Data Quality Indicators
 
 OMNI includes quality metadata:
+
 - Spacecraft ID (IMF and plasma sources)
 - Number of points in average (npts)
 - Percentage of interpolated data
@@ -69,17 +75,20 @@ We use Kyoto Dst as the ground truth target for model training and evaluation, a
 Historical satellite anomaly data comes from multiple sources:
 
 ### 3.3.1 NOAA NCEI Spacecraft Anomaly Database
+
 - **Coverage**: 1971-2022
 - **Records**: 10,000+ anomaly events
 - **Satellites**: 200+ spacecraft
 - **Anomaly Types**: Single event upsets, component failures, charging events
 
 ### 3.3.2 GOES EXIS Space Weather Events
+
 - **Coverage**: 2016-present
 - **Focus**: GOES-16/17 anomalies
 - **Detail**: High-resolution event characterization
 
 ### 3.3.3 TDRS Anomaly Reports
+
 - **Coverage**: 1983-2016
 - **Focus**: Communication satellite impacts
 - **Detail**: Operational impact assessment
@@ -87,6 +96,7 @@ Historical satellite anomaly data comes from multiple sources:
 ## 3.4 Solar Flare Reports
 
 NOAA NGDC X-ray flare reports provide:
+
 - **Coverage**: 1975-2016
 - **Source**: GOES X-ray sensors (XRS)
 - **Classification**: A, B, C, M, X classes
@@ -148,8 +158,8 @@ Output: `data/processed/omni.csv` with standardized columns and timestamps.
 For Dst prediction, we resample to hourly means:
 
 ```python
-df = df.set_index('time').sort_index()
-df_hourly = df.resample('1h').mean()
+df = df.set_index("time").sort_index()
+df_hourly = df.resample("1h").mean()
 ```
 
 This reduces noise while matching Dst temporal resolution.
@@ -159,16 +169,19 @@ This reduces noise while matching Dst temporal resolution.
 Two approaches are supported:
 
 **Strategy 1: Cubic Spline Interpolation**
+
 - Method: 3rd-order spline
 - Limit: 24 hours maximum gap
 - Area: Inside only (no extrapolation)
 - Use case: Training on historical data
 
 **Strategy 2: Drop Missing**
+
 - Method: Remove rows with any NaN
 - Use case: Strict evaluation, no imputation bias
 
 **Strategy 3: Mean Fill (Operational)**
+
 - Method: Fill with training set mean
 - Use case: Real-time inference when features unavailable
 
@@ -190,12 +203,14 @@ Quality metrics computed per time window:
 The complete feature set consists of 49 features across 6 categories:
 
 ### 4.1.1 Temporal Features (4 features)
+
 - **year**: Annual cycle, solar cycle proxy
 - **doy**: Day of year (1-366), seasonal variation
 - **hour**: Hour of day (0-23), diurnal variation
 - **minute**: Minute of hour (0-59), sub-hourly timing
 
 ### 4.1.2 Data Quality Metadata (13 features)
+
 - **imf_sc_id**: IMF spacecraft identifier
 - **sw_sc_id**: Solar wind spacecraft identifier
 - **imf_npts**: Number of IMF measurements in average
@@ -211,6 +226,7 @@ The complete feature set consists of 49 features across 6 categories:
 - **bsn_x, bsn_y, bsn_z**: Bow shock nose position
 
 ### 4.1.3 Magnetic Field Features (9 features)
+
 - **b_mag**: Total field magnitude
 - **bx_gse, by_gse, bz_gse**: GSE components
 - **by_gsm, bz_gsm**: GSM components (critical for coupling)
@@ -218,6 +234,7 @@ The complete feature set consists of 49 features across 6 categories:
 - **bz_abs**: |Bz_GSM| - magnitude regardless of direction
 
 ### 4.1.4 Solar Wind Plasma Features (10 features)
+
 - **flow_speed**: Bulk velocity magnitude
 - **vx_gse, vy_gse, vz_gse**: Velocity components
 - **proton_density**: Number density
@@ -229,11 +246,13 @@ The complete feature set consists of 49 features across 6 categories:
 - **magnetosonic_mach**: V/V_ms
 
 ### 4.1.5 Derived Coupling Features (5 features)
+
 - **v_np**: V × n_p (momentum flux)
 - **v2_np**: V² × n_p (energy flux)
 - **vbz_south**: V × min(Bz, 0) (southward coupling)
 
 ### 4.1.6 Geomagnetic Indices (8 features)
+
 - **ae**: Auroral electrojet index
 - **al**: Lower envelope of AE
 - **au**: Upper envelope of AE
@@ -252,14 +271,14 @@ Computed in `train_dst_lstm_attention.py`:
 ```python
 def _add_derived_features(df: pd.DataFrame) -> pd.DataFrame:
     # Momentum and energy flux
-    df['v_np'] = df['flow_speed'] * df['proton_density']
-    df['v2_np'] = (df['flow_speed'] ** 2) * df['proton_density']
-    
+    df["v_np"] = df["flow_speed"] * df["proton_density"]
+    df["v2_np"] = (df["flow_speed"] ** 2) * df["proton_density"]
+
     # Southward IMF coupling
-    df['bz_south'] = np.minimum(df['bz_gsm'], 0.0)
-    df['bz_abs'] = np.abs(df['bz_gsm'])
-    df['vbz_south'] = df['flow_speed'] * np.minimum(df['bz_gsm'], 0.0)
-    
+    df["bz_south"] = np.minimum(df["bz_gsm"], 0.0)
+    df["bz_abs"] = np.abs(df["bz_gsm"])
+    df["vbz_south"] = df["flow_speed"] * np.minimum(df["bz_gsm"], 0.0)
+
     return df
 ```
 
@@ -268,10 +287,12 @@ def _add_derived_features(df: pd.DataFrame) -> pd.DataFrame:
 The original storm risk model (`build_dataset.py`) includes rolling statistics:
 
 **15-minute windows**:
+
 - Mean, std, min, max for each base feature
 - Delta (current - 15min ago)
 
 **60-minute windows**:
+
 - Mean, std, min, max for each base feature
 - Delta (current - 60min ago)
 
@@ -296,6 +317,7 @@ Normalization parameters are saved in model metadata for inference.
 Feature selection is guided by solar wind-magnetosphere coupling physics:
 
 **Critical Features** (highest importance):
+
 1. **bz_gsm**: Primary coupling parameter
 2. **flow_speed**: Energy input driver
 3. **proton_density**: Momentum flux
@@ -303,6 +325,7 @@ Feature selection is guided by solar wind-magnetosphere coupling physics:
 5. **sym_h**: Recent geomagnetic state
 
 **Supporting Features**:
+
 - Plasma parameters (beta, Mach numbers)
 - Field variability (RMS values)
 - Temporal context (hour, doy)
@@ -310,6 +333,7 @@ Feature selection is guided by solar wind-magnetosphere coupling physics:
 ### 4.3.2 Correlation Analysis
 
 Feature correlation with Dst reveals:
+
 - **Bz_GSM**: r = 0.65 (strongest single predictor)
 - **Electric field**: r = 0.58
 - **SYM-H**: r = 0.95 (autoregressive component)
@@ -319,6 +343,7 @@ Feature correlation with Dst reveals:
 ### 4.3.3 Feature Ablation Studies
 
 Removing key features impacts performance:
+
 - Without Bz_GSM: RMSE increases 40%
 - Without velocity: RMSE increases 25%
 - Without density: RMSE increases 15%
@@ -337,6 +362,7 @@ python3 src/compute_feature_baseline.py \
 ```
 
 Computes for each feature:
+
 - Mean, std, min, max, median
 - Percentiles (1, 5, 25, 75, 95, 99)
 - Histogram bins
@@ -353,6 +379,7 @@ def compute_drift_score(current_dist, baseline_dist):
 ```
 
 Alert thresholds:
+
 - **Warning**: KL divergence > 0.1
 - **Critical**: KL divergence > 0.5
 
@@ -418,11 +445,13 @@ o_t = σ(W_o · [h_{t-1}, x_t] + b_o)
 h_t = o_t ⊙ tanh(c_t)
 
 where:
+
 - σ = sigmoid activation
 - ⊙ = element-wise multiplication
 - W, b = learnable weights and biases
 
 **Bidirectional Processing**:
+
 - Forward LSTM: processes t=1 to T
 - Backward LSTM: processes t=T to 1
 - Concatenation: h_t = [h_t^forward; h_t^backward]
@@ -449,15 +478,18 @@ This allows the model to focus on critical time steps (e.g., sudden Bz southward
 ### 5.1.4 Regularization
 
 **Dropout**: Applied after each attention layer
+
 - Layer 1: 10% dropout
 - Layer 2: 20% dropout
 - Prevents overfitting to training sequences
 
 **Layer Normalization**: Applied after dropout
+
 - Stabilizes training
 - Reduces internal covariate shift
 
 **Early Stopping**: Monitors validation RMSE
+
 - Patience: 5 epochs
 - Restores best weights
 
@@ -517,15 +549,15 @@ For horizons beyond training (e.g., 24h from 6h model):
 def forecast_autoregressive(model, initial_window, steps):
     predictions = []
     window = initial_window.copy()
-    
+
     for step in range(steps):
         pred = model.predict(window)
         predictions.append(pred)
-        
+
         # Shift window and append prediction
         window = np.roll(window, -1, axis=1)
         window[0, -1, :] = pred
-    
+
     return predictions
 ```
 
@@ -543,6 +575,7 @@ Gradient-boosted decision trees for binary classification:
 **Scale Pos Weight**: Auto-computed from class imbalance
 
 **Training**: Incremental over Parquet shards
+
 - 10 boosting rounds per shard
 - Continues from previous model
 - Enables out-of-core training
@@ -569,7 +602,7 @@ Post-training calibration for probability outputs:
 ```python
 from sklearn.isotonic import IsotonicRegression
 
-calibrator = IsotonicRegression(y_min=0.0, y_max=1.0, out_of_bounds='clip')
+calibrator = IsotonicRegression(y_min=0.0, y_max=1.0, out_of_bounds="clip")
 calibrator.fit(val_probs, val_labels)
 
 calibrated_probs = calibrator.transform(test_probs)
@@ -594,11 +627,13 @@ Temporal splitting prevents data leakage and simulates operational deployment.
 ### 6.1.2 Alternative Splits for Evaluation
 
 **Split A** (2023 evaluation):
+
 - Train: 1995-2022
 - Val: 2023
 - Test: 2024-2025
 
 **Split B** (Recent performance):
+
 - Train: 1995-2023
 - Val: 2024
 - Test: 2025
@@ -614,6 +649,7 @@ def lr_schedule(epoch):
 ```
 
 **Rationale**:
+
 - High LR (1e-3): Epochs 0-4, 10-14, 20-24, ...
 - Low LR (1e-4): Epochs 5-9, 15-19, 25-29, ...
 - Alternation helps escape local minima
@@ -688,36 +724,44 @@ python3 src/train_lgbm.py \
 ### 6.4.1 Grid Search Results
 
 **Sequence Length**:
+
 - Tested: 24, 48, 72, 96 hours
 - Best: 48 hours (balance of context and overfitting)
 
 **LSTM Units**:
+
 - Tested: (64, 64), (128, 128), (150, 170), (256, 256)
 - Best: (150, 170) asymmetric
 
 **Dropout Rates**:
+
 - Tested: (0.0, 0.0), (0.1, 0.2), (0.2, 0.3), (0.3, 0.4)
 - Best: (0.1, 0.2)
 
 **Batch Size**:
+
 - Tested: 16, 32, 48, 64, 128
 - Best: 48 (stability vs speed tradeoff)
 
 ### 6.4.2 Ablation Studies
 
 **Without Attention**:
+
 - RMSE: 6.8 nT (+33% vs 5.1 nT)
 - Correlation: 0.92 (vs 0.96)
 
 **Without Bidirectional**:
+
 - RMSE: 6.2 nT (+22%)
 - Correlation: 0.93
 
 **Without Layer Normalization**:
+
 - RMSE: 5.9 nT (+16%)
 - Training instability
 
 **Single LSTM Layer**:
+
 - RMSE: 6.5 nT (+27%)
 - Correlation: 0.93
 
@@ -726,6 +770,7 @@ python3 src/train_lgbm.py \
 ### 6.5.1 Random Seeds
 
 All training scripts use fixed seeds:
+
 - Python: `random.seed(42)`
 - NumPy: `np.random.seed(42)`
 - TensorFlow: `tf.random.set_seed(42)`
@@ -733,6 +778,7 @@ All training scripts use fixed seeds:
 ### 6.5.2 Model Metadata
 
 Saved with each trained model:
+
 - Feature list and order
 - Normalization parameters (mean, std)
 - Sequence length and horizon
@@ -767,4 +813,3 @@ Saved with each trained model:
 ```
 
 ---
-

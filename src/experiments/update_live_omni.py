@@ -4,11 +4,10 @@ import math
 import os
 import time
 from datetime import timedelta
-from urllib.request import urlopen, Request
+from urllib.request import Request, urlopen
 
 import numpy as np
 import pandas as pd
-
 from build_dataset import FEATURE_COLS
 from config import CONFIG
 from data_quality import read_tail_csv
@@ -134,12 +133,12 @@ def _ensure_header(csv_path: str):
     if first.startswith("time,"):
         return
     tmp_path = csv_path + ".tmp"
-    with open(tmp_path, "w", encoding="utf-8") as out, open(
-        csv_path, "r", encoding="utf-8", errors="ignore"
-    ) as src:
+    with (
+        open(tmp_path, "w", encoding="utf-8") as out,
+        open(csv_path, "r", encoding="utf-8", errors="ignore") as src,
+    ):
         out.write(header)
-        for line in src:
-            out.write(line)
+        out.writelines(src)
     os.replace(tmp_path, csv_path)
 
 

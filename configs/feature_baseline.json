@@ -14,7 +14,7 @@
     "b_mag": { "mean": 5.8, "std": 3.2 },
     "bx_gse": { "mean": 0.08, "std": 3.1 },
     "by_gse": { "mean": 0.03, "std": 3.6 },
-    "bz_gse": { "mean": -0.10, "std": 3.8 },
+    "bz_gse": { "mean": -0.1, "std": 3.8 },
     "ae": { "mean": 145.0, "std": 160.0 },
     "al": { "mean": -110.0, "std": 140.0 },
     "au": { "mean": 95.0, "std": 90.0 },

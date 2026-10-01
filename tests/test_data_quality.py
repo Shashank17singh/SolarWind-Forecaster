@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 import pandas as pd
-
 from data_quality import compute_quality
 
 
