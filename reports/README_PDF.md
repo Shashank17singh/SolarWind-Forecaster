@@ -13,6 +13,7 @@
 The comprehensive research paper includes:
 
 ### Part 1: Core Research (research_paper.md)
+
 - Title Page and Executive Summary
 - Abstract
 - Introduction (Background, Objectives, Contributions)
@@ -37,6 +38,7 @@ The comprehensive research paper includes:
 - Computational Performance
 
 ### Part 2: Extended Technical Details (research_paper_extended.md)
+
 - Data Sources and Acquisition
   - OMNI Solar Wind Database
   - Kyoto Dst Index
@@ -74,6 +76,7 @@ The comprehensive research paper includes:
 - Reproducibility (seeds, metadata, model registry)
 
 ### Part 3: Operational Deployment (research_paper_part3.md)
+
 - Operational Deployment Architecture
   - System overview diagram
   - Data ingestion layer
@@ -118,6 +121,7 @@ The comprehensive research paper includes:
 ## Key Highlights
 
 ### Performance Metrics
+
 - **RMSE**: 5.117 nT (state-of-the-art)
 - **MAE**: 3.880 nT
 - **Correlation**: 0.9586
@@ -126,6 +130,7 @@ The comprehensive research paper includes:
 - **Inference Latency**: <10ms CPU, <2ms GPU
 
 ### Model Architecture
+
 - Bidirectional LSTM with self-attention
 - 48-hour sequence length
 - 49 input features
@@ -133,6 +138,7 @@ The comprehensive research paper includes:
 - Periodic learning rate schedule
 
 ### Operational System
+
 - Real-time data ingestion (1-minute updates)
 - RESTful API (9 endpoints)
 - Web dashboard (8 pages)
@@ -140,6 +146,7 @@ The comprehensive research paper includes:
 - Sub-second inference latency
 
 ### Data Coverage
+
 - 30+ years of solar wind data (1995-2025)
 - 10,000+ satellite anomaly events
 - Multiple spacecraft sources (ACE, Wind, DSCOVR)
@@ -167,8 +174,8 @@ python3 reports/convert_to_pdf.py
 If using this research, please cite:
 
 ```
-Space Weather Research Team (2026). Space Weather Forecasting System: 
-A Comprehensive Machine Learning Approach to Geomagnetic Storm Prediction 
+Space Weather Research Team (2026). Space Weather Forecasting System:
+A Comprehensive Machine Learning Approach to Geomagnetic Storm Prediction
 and Satellite Impact Assessment. Technical Report, Version 2.0.
 ```
 

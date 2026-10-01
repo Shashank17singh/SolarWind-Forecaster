@@ -1,7 +1,6 @@
 import os
 import re
 from datetime import datetime, timedelta
-from typing import List, Dict
 
 
 def _parse_date(token: str) -> datetime:
@@ -32,7 +31,7 @@ def _minutes_to_dt(date: datetime, minutes: int):
     return date.replace(hour=minutes // 60, minute=minutes % 60)
 
 
-def load_flare_reports(folder: str) -> List[Dict]:
+def load_flare_reports(folder: str) -> list[dict]:
     events = []
     for name in sorted(os.listdir(folder)):
         if not name.startswith("goes-xrs-report_") or not name.endswith(".txt"):

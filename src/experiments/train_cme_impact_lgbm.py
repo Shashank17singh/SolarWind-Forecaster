@@ -5,7 +5,7 @@ import os
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
-from sklearn.metrics import average_precision_score, roc_auc_score, mean_absolute_error
+from sklearn.metrics import average_precision_score, mean_absolute_error, roc_auc_score
 
 
 def _parse_ts(value: str) -> pd.Timestamp:

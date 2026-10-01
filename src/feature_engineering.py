@@ -1,5 +1,6 @@
 import argparse
 import os
+
 import numpy as np
 import pandas as pd
 from flare_reports import load_flare_reports

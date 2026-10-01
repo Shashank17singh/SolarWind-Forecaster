@@ -1,4 +1,5 @@
 # Space Weather Forecasting System - Part 3
+
 # Operational Deployment and System Architecture
 
 <!-- PAGE 11 -->
@@ -69,6 +70,7 @@ The operational deployment consists of six major subsystems:
 **Script**: `src/update_live_omni.py`
 
 **Data Sources**:
+
 - NOAA SWPC Real-Time Solar Wind: https://services.swpc.noaa.gov/products/solar-wind/
 - DSCOVR Real-Time Data: https://services.swpc.noaa.gov/products/solar-wind/mag-7-day.json
 - ACE Real-Time Data: https://services.swpc.noaa.gov/products/solar-wind/plasma-7-day.json
@@ -76,6 +78,7 @@ The operational deployment consists of six major subsystems:
 **Update Frequency**: Every 1 minute (cron job)
 
 **Process**:
+
 1. Fetch latest 7-day data from SWPC
 2. Parse JSON format
 3. Merge with existing CSV
@@ -84,6 +87,7 @@ The operational deployment consists of six major subsystems:
 6. Append to `data/processed/omni_live.csv`
 
 **Cron Configuration**:
+
 ```bash
 * * * * * cd /path/to/project && python3 src/update_live_omni.py \
   --output-csv data/processed/omni_live.csv >> logs/live_update.log 2>&1
@@ -96,6 +100,7 @@ The operational deployment consists of six major subsystems:
 **Latency**: ~1 hour behind real-time
 
 **Process**:
+
 ```bash
 python3 src/fetch_kyoto_dst.py \
   --out-dir data/indices/kyoto \
@@ -113,12 +118,14 @@ python3 src/fetch_kyoto_dst.py \
 **Script**: `src/data_quality.py`
 
 **Checks**:
+
 - **Completeness**: Fraction of non-missing values per feature
 - **Timeliness**: Age of latest data point
 - **Consistency**: Range checks, outlier detection
 - **Drift**: Distribution comparison with baseline
 
 **Quality Metrics**:
+
 ```json
 {
   "timestamp": "2026-02-08T12:00:00Z",
@@ -132,6 +139,7 @@ python3 src/fetch_kyoto_dst.py \
 ```
 
 **Alert Thresholds**:
+
 - Completeness < 0.90: Warning
 - Completeness < 0.80: Critical
 - Data age > 15 min: Warning
@@ -149,33 +157,33 @@ python3 src/fetch_kyoto_dst.py \
 1. **GET /api/dst/latest**
    - Returns latest Dst prediction
    - Response time: <10ms (cached)
-   
+
 2. **GET /api/dst/forecast**
    - Returns 6-hour forecast
    - Uses two-stage prediction
-   
+
 3. **GET /api/storm-risk**
    - Returns storm probability
    - Threshold-based alerts
-   
+
 4. **GET /api/satellite-impact**
    - Returns satellite anomaly risk
    - 6-hour ahead probability
-   
+
 5. **GET /api/solar-wind/current**
    - Returns current solar wind conditions
-   
+
 6. **GET /api/solar-wind/forecast**
    - Returns 6-24 hour solar wind forecast
-   
+
 7. **GET /api/health**
    - System health check
    - Uptime, request stats, data quality
-   
+
 8. **GET /api/quality**
    - Data quality metrics
    - Gap analysis, drift scores
-   
+
 9. **GET /api/metrics**
    - Model performance metrics
    - Historical accuracy
@@ -183,6 +191,7 @@ python3 src/fetch_kyoto_dst.py \
 ### 8.3.2 API Response Format
 
 **Example: /api/dst/latest**
+
 ```json
 {
   "timestamp": "2026-02-08T12:00:00Z",
@@ -197,6 +206,7 @@ python3 src/fetch_kyoto_dst.py \
 ```
 
 **Example: /api/storm-risk**
+
 ```json
 {
   "timestamp": "2026-02-08T12:00:00Z",
@@ -221,16 +231,19 @@ python3 src/fetch_kyoto_dst.py \
 ### 8.3.3 Rate Limiting and Authentication
 
 **Rate Limiting**:
+
 - Default: 5 requests/second per IP
 - Burst: 20 requests
 - Configurable via `API_RATE_LIMIT_RPS` and `API_RATE_LIMIT_BURST`
 
 **Authentication** (optional):
+
 - API key in header: `X-API-Key: <key>`
 - Enabled via `REQUIRE_API_KEY=1`
 - Key set via `API_KEY` environment variable
 
 **CORS**:
+
 - Configurable allowed origins
 - Default: `*` (all origins)
 - Production: Specific domains only
@@ -240,11 +253,13 @@ python3 src/fetch_kyoto_dst.py \
 **Cache TTL**: 30 seconds (configurable)
 
 **Cached Endpoints**:
+
 - `/api/dst/latest`: 30s
 - `/api/solar-wind/current`: 30s
 - `/api/health`: 60s
 
 **Cache Invalidation**:
+
 - Time-based expiration
 - Manual invalidation on data update
 - Version-based invalidation on model update
@@ -254,62 +269,74 @@ python3 src/fetch_kyoto_dst.py \
 ### 8.4.1 Technology Stack
 
 **Frontend**:
+
 - Next.js 14.2.7 (React framework)
 - Server-side rendering for performance
 - Static generation for public pages
 
 **Styling**:
+
 - Custom CSS with CSS modules
 - Responsive design (mobile, tablet, desktop)
 
 **Charting**:
+
 - Custom canvas-based time series plots
 - Real-time updates via polling
 - Interactive zoom and pan
 
 **Deployment**:
+
 - Vercel (production)
 - Docker (self-hosted option)
 
 ### 8.4.2 Dashboard Pages
 
 **1. Home Page** (`/`)
+
 - Current space weather overview
 - Dst gauge and trend
 - Storm risk indicator
 - Recent alerts
 
 **2. Aurora Page** (`/aurora`)
+
 - Aurora forecast (Kp-based)
 - Visibility maps
 - Historical aurora events
 
 **3. Solar Wind Page** (`/solar-wind`)
+
 - Real-time solar wind parameters
 - 6-hour forecast
 - Parameter trends
 
 **4. Dst/Kp Page** (`/kp-dst`)
+
 - Dst time series (7-day)
 - Kp index
 - Storm history
 
 **5. Magnetometers Page** (`/magnetometers`)
+
 - Ground magnetometer data
 - Station locations
 - Real-time traces
 
 **6. Flares Page** (`/flares`)
+
 - Recent solar flares
 - X-ray flux
 - Flare forecast
 
 **7. Protons Page** (`/protons`)
+
 - Solar energetic protons
 - SEP event risk
 - Radiation storm scale
 
 **8. CME Page** (`/cme`)
+
 - Coronal mass ejection list
 - CME arrival predictions
 - Impact assessment
@@ -317,11 +344,13 @@ python3 src/fetch_kyoto_dst.py \
 ### 8.4.3 Real-Time Updates
 
 **Polling Strategy**:
+
 - Dst/storm risk: Every 30 seconds
 - Solar wind: Every 60 seconds
 - Alerts: Every 15 seconds
 
 **WebSocket** (future enhancement):
+
 - Push updates to clients
 - Reduced server load
 - Lower latency
@@ -329,6 +358,7 @@ python3 src/fetch_kyoto_dst.py \
 ### 8.4.4 Alert System
 
 **Alert Types**:
+
 1. **Storm Watch**: Dst predicted < -50 nT within 6 hours
 2. **Storm Warning**: Dst predicted < -50 nT within 1 hour
 3. **Severe Storm Warning**: Dst predicted < -100 nT
@@ -336,6 +366,7 @@ python3 src/fetch_kyoto_dst.py \
 5. **Data Quality Alert**: Completeness < 0.8 or age > 60 min
 
 **Notification Channels**:
+
 - In-dashboard banner
 - Browser notifications (with permission)
 - Email (configurable)
@@ -348,6 +379,7 @@ python3 src/fetch_kyoto_dst.py \
 **File**: `models_deploy/registry.json`
 
 **Schema**:
+
 ```json
 {
   "models": [
@@ -377,6 +409,7 @@ python3 src/fetch_kyoto_dst.py \
 ### 8.5.2 Model Deployment Process
 
 **Steps**:
+
 1. Train new model with `train_dst_lstm_attention.py`
 2. Evaluate on test set
 3. Register model with `register_model()` function
@@ -386,6 +419,7 @@ python3 src/fetch_kyoto_dst.py \
 7. Promote to production
 
 **Rollback**:
+
 - Keep previous 3 model versions
 - Instant rollback by changing loaded model
 - No downtime required
@@ -393,6 +427,7 @@ python3 src/fetch_kyoto_dst.py \
 ### 8.5.3 Continuous Monitoring
 
 **Metrics Tracked**:
+
 - Prediction RMSE (rolling 24h window)
 - API latency (p50, p95, p99)
 - Error rate
@@ -400,6 +435,7 @@ python3 src/fetch_kyoto_dst.py \
 - Feature drift score
 
 **Alerting**:
+
 - RMSE increases >20%: Investigate
 - RMSE increases >50%: Rollback
 - Latency p99 > 100ms: Scale up
@@ -410,6 +446,7 @@ python3 src/fetch_kyoto_dst.py \
 ### 8.6.1 Security Measures
 
 **API Security**:
+
 - Optional API key authentication
 - Rate limiting per IP
 - CORS restrictions
@@ -417,12 +454,14 @@ python3 src/fetch_kyoto_dst.py \
 - No user data storage (stateless)
 
 **Infrastructure Security**:
+
 - HTTPS only (production)
 - Reverse proxy (nginx)
 - Firewall rules
 - Regular security updates
 
 **Data Security**:
+
 - Public data sources only
 - No PII or sensitive data
 - Audit logs for API access
@@ -430,21 +469,24 @@ python3 src/fetch_kyoto_dst.py \
 ### 8.6.2 Compliance
 
 **Data Sources**:
+
 - OMNI: Public domain (NASA)
 - Kyoto Dst: Free for research and operational use
 - NOAA data: Public domain (US government)
 
 **Model Outputs**:
+
 - Predictions are advisory only
 - Not certified for safety-critical decisions
 - Users responsible for operational decisions
 
 **Disclaimer**:
+
 ```
-This system provides space weather forecasts for informational 
-purposes only. Predictions are statistical and may contain errors. 
-Users should not rely solely on these forecasts for safety-critical 
-or mission-critical decisions. Always consult official sources 
+This system provides space weather forecasts for informational
+purposes only. Predictions are statistical and may contain errors.
+Users should not rely solely on these forecasts for safety-critical
+or mission-critical decisions. Always consult official sources
 (NOAA SWPC, ESA SSA) for operational space weather warnings.
 ```
 
@@ -453,28 +495,33 @@ or mission-critical decisions. Always consult official sources
 ### 8.7.1 Current Capacity
 
 **Single Server** (8-core CPU, 16 GB RAM):
+
 - Requests per second: 120
 - Concurrent users: 500
 - Daily predictions: 10 million+
 
 **With Caching**:
+
 - Requests per second: 450
 - Concurrent users: 2000+
 
 ### 8.7.2 Scaling Strategy
 
 **Horizontal Scaling**:
+
 - Load balancer (nginx)
 - Multiple API server instances
 - Shared model storage (NFS or S3)
 - Redis for distributed caching
 
 **Vertical Scaling**:
+
 - GPU for faster inference
 - More CPU cores for parallel requests
 - SSD for faster model loading
 
 **Database** (future):
+
 - PostgreSQL for historical predictions
 - TimescaleDB for time series
 - Enables analytics and model retraining
@@ -482,12 +529,14 @@ or mission-critical decisions. Always consult official sources
 ### 8.7.3 Cost Analysis
 
 **Cloud Deployment** (AWS):
+
 - EC2 t3.large: $60/month
 - S3 storage (100 GB): $2/month
 - Data transfer: $10/month
 - **Total**: ~$75/month
 
 **Self-Hosted**:
+
 - Hardware: $2000 one-time
 - Electricity: $20/month
 - Internet: $50/month
@@ -506,22 +555,23 @@ or mission-critical decisions. Always consult official sources
 **Method**: Quantile regression
 
 Train three models:
+
 - Lower bound (10th percentile)
 - Median (50th percentile)
 - Upper bound (90th percentile)
 
 **Loss Function**:
+
 ```python
 def quantile_loss(y_true, y_pred, quantile):
     error = y_true - y_pred
-    return tf.reduce_mean(
-        tf.maximum(quantile * error, (quantile - 1) * error)
-    )
+    return tf.reduce_mean(tf.maximum(quantile * error, (quantile - 1) * error))
 ```
 
 **Result**: 80% prediction intervals
 
 **Example Output**:
+
 ```json
 {
   "dst_predicted": -45.2,
@@ -533,16 +583,19 @@ def quantile_loss(y_true, y_pred, quantile):
 ### 9.1.2 Ensemble Methods
 
 **Approach**: Train multiple models with different:
+
 - Random seeds
 - Train/val splits
 - Hyperparameters
 
 **Aggregation**:
+
 - Mean prediction
 - Median prediction
 - Weighted average (by validation performance)
 
 **Uncertainty Estimate**:
+
 - Standard deviation of ensemble predictions
 - Higher std = higher uncertainty
 
@@ -551,11 +604,13 @@ def quantile_loss(y_true, y_pred, quantile):
 **Method**: Keep dropout active during inference
 
 **Process**:
+
 1. Run model N times (e.g., N=100)
 2. Collect N predictions
 3. Compute mean and std
 
 **Interpretation**:
+
 - Mean: Best estimate
 - Std: Epistemic uncertainty
 
@@ -566,11 +621,13 @@ def quantile_loss(y_true, y_pred, quantile):
 **Method**: Extract attention weights from trained model
 
 **Visualization**:
+
 - Heatmap of attention scores over time
 - Highlights critical time steps
 - Reveals model focus during storms
 
 **Example Insight**:
+
 - High attention on Bz southward turns
 - Increased attention 2-4 hours before storm onset
 - Attention shifts to velocity during main phase
@@ -578,6 +635,7 @@ def quantile_loss(y_true, y_pred, quantile):
 ### 9.2.2 Feature Importance
 
 **SHAP Values** (for LightGBM models):
+
 ```python
 import shap
 
@@ -589,6 +647,7 @@ shap.summary_plot(shap_values, X_test, feature_names=feature_cols)
 ```
 
 **Results**:
+
 - Bz_GSM: 28% importance
 - SYM-H: 22% importance
 - Flow_speed: 15% importance
@@ -600,6 +659,7 @@ shap.summary_plot(shap_values, X_test, feature_names=feature_cols)
 **Method**: Vary one feature, hold others constant
 
 **Example**: Dst vs Bz_GSM
+
 - Bz > 0: Dst ~ -10 nT (quiet)
 - Bz = 0: Dst ~ -20 nT
 - Bz = -5 nT: Dst ~ -40 nT
@@ -613,6 +673,7 @@ shap.summary_plot(shap_values, X_test, feature_names=feature_cols)
 **Approach**: Train separate models for each horizon
 
 **Horizons**:
+
 - 1 hour: RMSE = 5.1 nT
 - 3 hours: RMSE = 8.4 nT
 - 6 hours: RMSE = 12.2 nT
@@ -636,14 +697,15 @@ shap.summary_plot(shap_values, X_test, feature_names=feature_cols)
 **Output**: Histogram or mixture of Gaussians
 
 **Example**:
+
 ```json
 {
   "horizon_hours": 6,
   "distribution": {
     "type": "gaussian_mixture",
     "components": [
-      {"mean": -45, "std": 8, "weight": 0.7},
-      {"mean": -65, "std": 12, "weight": 0.3}
+      { "mean": -45, "std": 8, "weight": 0.7 },
+      { "mean": -65, "std": 12, "weight": 0.3 }
     ]
   },
   "percentiles": {
@@ -663,6 +725,7 @@ shap.summary_plot(shap_values, X_test, feature_names=feature_cols)
 **Output**: Solar wind speed, density, magnetic field at Earth
 
 **Integration**:
+
 1. Download WSA-Enlil forecast
 2. Use as input to Dst model
 3. Generate 1-4 day Dst forecast
@@ -675,16 +738,19 @@ shap.summary_plot(shap_values, X_test, feature_names=feature_cols)
 **Method**: Combine ML and physics models
 
 **Approach 1**: ML corrects physics model bias
+
 ```python
 dst_final = dst_physics + ml_correction(dst_physics, features)
 ```
 
 **Approach 2**: Weighted ensemble
+
 ```python
 dst_final = w1 * dst_ml + w2 * dst_physics
 ```
 
 **Approach 3**: ML learns residuals
+
 ```python
 dst_final = dst_physics + ml_residual(features)
 ```
@@ -694,6 +760,7 @@ dst_final = dst_physics + ml_residual(features)
 **Method**: Combine observations with model predictions
 
 **Kalman Filter**:
+
 - State: Dst and derivatives
 - Observations: Real-time Dst measurements
 - Model: ML predictions
@@ -713,6 +780,7 @@ dst_final = dst_physics + ml_residual(features)
 **Challenge**: Solar cycle variations affect model performance
 
 **Solution**: Domain adaptation
+
 - Train on Solar Cycle 24 (2008-2019)
 - Adapt to Solar Cycle 25 (2020-2030)
 - Use domain adversarial training
@@ -733,6 +801,7 @@ dst_final = dst_physics + ml_residual(features)
 **Method**: Update model with new data continuously
 
 **Approach**:
+
 - Incremental learning (add new data to training)
 - Sliding window (keep last N years)
 - Exponential weighting (recent data weighted more)
@@ -746,6 +815,7 @@ dst_final = dst_physics + ml_residual(features)
 **Method**: Identify uncertain predictions, request labels
 
 **Process**:
+
 1. Model makes prediction
 2. Compute uncertainty
 3. If uncertainty > threshold, flag for review
@@ -775,6 +845,7 @@ dst_final = dst_physics + ml_residual(features)
 ### 10.1.1 Missing Data
 
 **Problem**: Features missing in recent years
+
 - magnetosonic_mach: 15% missing in 2025
 - plasma_beta: 12% missing
 - temperature: 11% missing
@@ -782,6 +853,7 @@ dst_final = dst_physics + ml_residual(features)
 **Impact**: Performance degradation (RMSE increases from 5.1 to 12.9 nT)
 
 **Mitigation**:
+
 - Mean imputation (current)
 - Model-based imputation (future)
 - Train separate model for incomplete features
@@ -791,9 +863,11 @@ dst_final = dst_physics + ml_residual(features)
 **Problem**: Real-time data has 1-5 minute delay
 
 **Impact**: Reduces effective lead time
+
 - 1-hour prediction becomes 55-59 minute prediction
 
 **Mitigation**:
+
 - Nowcasting model (0-minute horizon)
 - Extrapolation for latest minutes
 
@@ -802,6 +876,7 @@ dst_final = dst_physics + ml_residual(features)
 **Problem**: Quality varies by spacecraft and time period
 
 **Examples**:
+
 - ACE: High quality, but aging (launched 1997)
 - DSCOVR: Good quality, but occasional gaps
 - Wind: Excellent quality, but not always at L1
@@ -809,18 +884,21 @@ dst_final = dst_physics + ml_residual(features)
 **Impact**: Inconsistent model performance
 
 **Mitigation**:
+
 - Quality-aware training (weight by quality score)
 - Ensemble of models trained on different spacecraft
 
 ### 10.1.4 Sparse Extreme Events
 
 **Problem**: Few extreme storms in training data
+
 - Dst < -200 nT: Only 5 events in 30 years
 - Dst < -300 nT: Only 2 events
 
 **Impact**: Model underestimates extreme events
 
 **Mitigation**:
+
 - Synthetic data generation (SMOTE)
 - Transfer learning from physics simulations
 - Ensemble with physics models for extremes
@@ -844,6 +922,7 @@ dst_final = dst_physics + ml_residual(features)
 **Impact**: Model trained on solar minimum performs worse at solar maximum
 
 **Mitigation**:
+
 - Periodic retraining (every 6 months)
 - Solar cycle features (F10.7, SSN)
 - Adaptive learning rate
@@ -851,11 +930,13 @@ dst_final = dst_physics + ml_residual(features)
 ### 10.2.3 Compounding Errors
 
 **Problem**: Two-stage prediction compounds errors
+
 - Solar wind forecast error: RMSE = 2.8
 - Dst prediction error: RMSE = 5.1
 - Combined error: RMSE = 8.2 (not additive, but significant)
 
 **Mitigation**:
+
 - End-to-end training (future work)
 - Uncertainty propagation
 - Ensemble methods
@@ -867,6 +948,7 @@ dst_final = dst_physics + ml_residual(features)
 **Impact**: Hard to diagnose failures, build trust
 
 **Mitigation**:
+
 - Attention visualization
 - SHAP values (for tree models)
 - Hybrid ML-physics models
@@ -880,6 +962,7 @@ dst_final = dst_physics + ml_residual(features)
 **Cost**: $500-2000 for GPU hardware
 
 **Mitigation**:
+
 - Model quantization (reduce precision)
 - Model distillation (smaller student model)
 - Cloud GPU (pay-per-use)
@@ -891,6 +974,7 @@ dst_final = dst_physics + ml_residual(features)
 **Effort**: Retraining every 6 months
 
 **Mitigation**:
+
 - Automated retraining pipeline
 - Continuous monitoring
 - A/B testing for new models
@@ -904,6 +988,7 @@ dst_final = dst_physics + ml_residual(features)
 **Trade-off**: Sensitivity vs specificity
 
 **Mitigation**:
+
 - Calibrated probabilities
 - User-configurable thresholds
 - Confidence indicators
@@ -925,6 +1010,7 @@ dst_final = dst_physics + ml_residual(features)
 **Problem**: Model doesn't explicitly represent all physics
 
 **Missing**:
+
 - Substorm dynamics
 - Plasmasphere effects
 - Ionospheric feedback
@@ -942,6 +1028,7 @@ dst_final = dst_physics + ml_residual(features)
 **Example**: Carrington Event (1859) - Dst estimated at -1760 nT
 
 **Mitigation**:
+
 - Physics constraints
 - Ensemble with physics models
 - Conservative extrapolation
@@ -955,9 +1042,9 @@ dst_final = dst_physics + ml_residual(features)
 **Example**: Model might learn time-of-day patterns that don't generalize
 
 **Mitigation**:
+
 - Feature selection based on physics
 - Causal inference methods
 - Validation on out-of-distribution data
 
 ---
-

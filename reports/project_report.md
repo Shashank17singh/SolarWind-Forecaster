@@ -39,20 +39,20 @@ Existing tools from NOAA/NASA provide forecasts but require expert interpretatio
 
 ## 4. Data Sources
 
-| Dataset | Source | Coverage |
-|---|---|---|
-| OMNI High-Resolution Solar Wind (1-min) | NASA GSFC SPDF | 1995 – 2025 |
-| X-Ray Flare Reports (XRS) | NOAA NGDC | 1975 – 2016 |
-| Kyoto Dst Index (hourly) | Kyoto WDC | 1957 – present |
-| JB2008 Thermospheric Indices | Space Environment Technologies | 2000 – present |
-| Spacecraft Anomaly Records (NCEI) | NOAA NCEI | 1971 – 2020 |
-| Live Solar Wind (real-time) | NOAA SWPC / ACE / DSCOVR | Real-time |
-| Live Kp Index | NOAA SWPC | Real-time |
-| Live X-ray Flux (GOES) | NOAA SWPC | Real-time |
-| Live Proton Flux (SEP) | NOAA SWPC | Real-time |
-| CME Events (DONKI) | NASA CCMC | Real-time |
-| Aurora Oval Images | NOAA SWPC OVATION | Real-time |
-| WSA-Enlil Solar Wind Forecast | NOAA NCEP | 1–4 day forecast |
+| Dataset                                 | Source                         | Coverage         |
+| --------------------------------------- | ------------------------------ | ---------------- |
+| OMNI High-Resolution Solar Wind (1-min) | NASA GSFC SPDF                 | 1995 – 2025      |
+| X-Ray Flare Reports (XRS)               | NOAA NGDC                      | 1975 – 2016      |
+| Kyoto Dst Index (hourly)                | Kyoto WDC                      | 1957 – present   |
+| JB2008 Thermospheric Indices            | Space Environment Technologies | 2000 – present   |
+| Spacecraft Anomaly Records (NCEI)       | NOAA NCEI                      | 1971 – 2020      |
+| Live Solar Wind (real-time)             | NOAA SWPC / ACE / DSCOVR       | Real-time        |
+| Live Kp Index                           | NOAA SWPC                      | Real-time        |
+| Live X-ray Flux (GOES)                  | NOAA SWPC                      | Real-time        |
+| Live Proton Flux (SEP)                  | NOAA SWPC                      | Real-time        |
+| CME Events (DONKI)                      | NASA CCMC                      | Real-time        |
+| Aurora Oval Images                      | NOAA SWPC OVATION              | Real-time        |
+| WSA-Enlil Solar Wind Forecast           | NOAA NCEP                      | 1–4 day forecast |
 
 ---
 
@@ -103,6 +103,7 @@ Existing tools from NOAA/NASA provide forecasts but require expert interpretatio
 ## 6. ML Models
 
 ### 6.1 Storm Risk Model
+
 - **Type:** LightGBM binary classifier
 - **Target:** P(SYM/H ≤ −50 nT within next 15 minutes)
 - **Features:** 20 base solar wind features + 15-min and 60-min rolling averages
@@ -110,18 +111,21 @@ Existing tools from NOAA/NASA provide forecasts but require expert interpretatio
 - **Output:** Calibrated probability 0–1
 
 ### 6.2 SYM/H Regression Model
+
 - **Type:** LightGBM regressor
 - **Target:** SYM/H value at +15 minutes (nT)
 - **Use:** Quantifies storm intensity, not just yes/no
 - **Output:** Predicted SYM/H in nanoTesla
 
 ### 6.3 Flare Risk Model
+
 - **Type:** LightGBM binary classifier
 - **Target:** P(M or X class flare within 15 minutes)
 - **Fallback:** X-ray flux proxy from GOES satellite (A/B/C/M/X class mapping)
 - **Output:** Probability + flare class label
 
 ### 6.4 Dst LSTM + Attention Model
+
 - **Type:** LSTM with attention mechanism (Keras/TensorFlow)
 - **Target:** Dst index at +1 hour
 - **Input:** 48-step sequence (48 hours of hourly data)
@@ -130,18 +134,21 @@ Existing tools from NOAA/NASA provide forecasts but require expert interpretatio
 - **Output:** Forecast Dst in nT + 72-hour forecast series
 
 ### 6.5 Satellite Drag Model
+
 - **Type:** LightGBM regressor
 - **Target:** JB2008 DTC (thermospheric temperature correction) at +3 hours
 - **Use:** Higher DTC = denser atmosphere = more drag on satellites
 - **Output:** DTC value → translated to drag acceleration (m/s²) per satellite
 
 ### 6.6 Satellite Anomaly / Impact Model
+
 - **Type:** LightGBM binary classifier
 - **Target:** P(satellite anomaly within next 6 hours)
 - **Training data:** NCEI spacecraft anomaly records + OMNI solar wind
 - **Output:** Probability + Low/Elevated/High risk level
 
 ### 6.7 CME Impact Model
+
 - **Type:** LightGBM classifier + regressor (two models)
 - **Target:** P(CME hits Earth) + transit time (hours)
 - **Input:** CME speed, width, latitude, longitude, halo flag
@@ -154,64 +161,68 @@ Existing tools from NOAA/NASA provide forecasts but require expert interpretatio
 
 Key engineered features used across models:
 
-| Feature | Description |
-|---|---|
-| `bz_gsm` | North-south magnetic field — primary storm driver |
-| `bz_south` | max(0, −Bz) — only southward component |
-| `vbz_south` | V × Bz_south — reconnection proxy |
-| `flow_speed` | Solar wind velocity (km/s) |
-| `flow_pressure` | Dynamic pressure (nPa) |
-| `proton_density` | Particle density (cm⁻³) |
-| `electric_field` | Interplanetary electric field (mV/m) |
-| `plasma_beta` | Ratio of plasma to magnetic pressure |
-| `alfven_mach` | Alfvén Mach number |
-| `ae`, `al`, `au` | Auroral electrojet indices |
-| `sym_h` | Current geomagnetic disturbance level |
-| Rolling 15-min avg | Short-term trend of all above |
-| Rolling 60-min avg | Medium-term trend of all above |
+| Feature            | Description                                       |
+| ------------------ | ------------------------------------------------- |
+| `bz_gsm`           | North-south magnetic field — primary storm driver |
+| `bz_south`         | max(0, −Bz) — only southward component            |
+| `vbz_south`        | V × Bz_south — reconnection proxy                 |
+| `flow_speed`       | Solar wind velocity (km/s)                        |
+| `flow_pressure`    | Dynamic pressure (nPa)                            |
+| `proton_density`   | Particle density (cm⁻³)                           |
+| `electric_field`   | Interplanetary electric field (mV/m)              |
+| `plasma_beta`      | Ratio of plasma to magnetic pressure              |
+| `alfven_mach`      | Alfvén Mach number                                |
+| `ae`, `al`, `au`   | Auroral electrojet indices                        |
+| `sym_h`            | Current geomagnetic disturbance level             |
+| Rolling 15-min avg | Short-term trend of all above                     |
+| Rolling 60-min avg | Medium-term trend of all above                    |
 
 ---
 
 ## 8. Tech Stack
 
 ### Backend / ML
-| Tool | Purpose |
-|---|---|
-| Python 3.12 | Core language |
-| LightGBM | Primary ML model (storm, flare, drag, impact, CME) |
-| Keras / TensorFlow | LSTM + Attention model for Dst forecasting |
-| Scikit-learn | Preprocessing, calibration, pipelines |
-| Pandas | Data loading, cleaning, feature engineering |
-| NumPy | Numerical operations, array handling |
-| Joblib | Model serialization (.joblib files) |
-| PyArrow | Parquet shards for large dataset training |
-| SciPy | Statistical utilities |
-| Matplotlib | Evaluation plots and figures |
+
+| Tool               | Purpose                                            |
+| ------------------ | -------------------------------------------------- |
+| Python 3.12        | Core language                                      |
+| LightGBM           | Primary ML model (storm, flare, drag, impact, CME) |
+| Keras / TensorFlow | LSTM + Attention model for Dst forecasting         |
+| Scikit-learn       | Preprocessing, calibration, pipelines              |
+| Pandas             | Data loading, cleaning, feature engineering        |
+| NumPy              | Numerical operations, array handling               |
+| Joblib             | Model serialization (.joblib files)                |
+| PyArrow            | Parquet shards for large dataset training          |
+| SciPy              | Statistical utilities                              |
+| Matplotlib         | Evaluation plots and figures                       |
 
 ### API Server
-| Tool | Purpose |
-|---|---|
-| Python `http.server` | Lightweight ThreadingHTTPServer |
-| urllib | Live data fetching from NOAA/NASA APIs |
-| JSON | API response format |
-| Rotating file logs | Request logging with size limits |
+
+| Tool                 | Purpose                                |
+| -------------------- | -------------------------------------- |
+| Python `http.server` | Lightweight ThreadingHTTPServer        |
+| urllib               | Live data fetching from NOAA/NASA APIs |
+| JSON                 | API response format                    |
+| Rotating file logs   | Request logging with size limits       |
 
 ### Frontend
-| Tool | Purpose |
-|---|---|
-| HTML5 / CSS3 / JavaScript | Static web dashboard (`web/`) |
-| Next.js 14 + React 18 | App router version (`app/`) |
-| Canvas API | Custom chart rendering (no chart library needed) |
-| Space Grotesk + JetBrains Mono | Google Fonts for UI typography |
-| NOAA SWPC image feeds | Live aurora, solar wind, geospace imagery |
+
+| Tool                           | Purpose                                          |
+| ------------------------------ | ------------------------------------------------ |
+| HTML5 / CSS3 / JavaScript      | Static web dashboard (`web/`)                    |
+| Next.js 14 + React 18          | App router version (`app/`)                      |
+| Canvas API                     | Custom chart rendering (no chart library needed) |
+| Space Grotesk + JetBrains Mono | Google Fonts for UI typography                   |
+| NOAA SWPC image feeds          | Live aurora, solar wind, geospace imagery        |
 
 ### Deployment
-| Tool | Purpose |
-|---|---|
-| Vercel | Frontend deployment (Next.js) |
-| Nginx | Reverse proxy config (`configs/nginx.conf`) |
-| Cron | Scheduled live data updates (every 1 minute) |
-| Docker / Kubernetes | Container deployment (production ops) |
+
+| Tool                | Purpose                                      |
+| ------------------- | -------------------------------------------- |
+| Vercel              | Frontend deployment (Next.js)                |
+| Nginx               | Reverse proxy config (`configs/nginx.conf`)  |
+| Cron                | Scheduled live data updates (every 1 minute) |
+| Docker / Kubernetes | Container deployment (production ops)        |
 
 ---
 
@@ -250,23 +261,23 @@ Step 5: Serve
 
 ## 10. API Endpoints
 
-| Endpoint | Description |
-|---|---|
-| `GET /api/metrics` | Main predictions: storm risk, SYM/H, flare, drag, SEP |
-| `GET /api/kp` | Latest Kp index from NOAA |
-| `GET /api/series` | Time series: SYM/H, Bz, solar wind speed |
-| `GET /api/dst` | Historical Dst observed vs predicted |
-| `GET /api/dst-forecast` | 72-hour Dst forecast |
-| `GET /api/dst-outlook` | 30-day geomagnetic outlook |
-| `GET /api/solar-wind-ml` | 7-day ML solar wind forecast |
-| `GET /api/enlil` | WSA-Enlil 4-day physics forecast |
-| `GET /api/cme` | Latest CME event + impact prediction |
-| `GET /api/cme-climo` | CME climatology by month |
-| `GET /api/cme-scenario` | Custom CME scenario predictor |
-| `GET /api/alerts` | Live NOAA space weather alerts |
-| `GET /api/aurora` | Aurora nowcast + forecast |
-| `GET /api/satellites` | Satellite preset configurations |
-| `GET /api/health` | System health, uptime, data quality |
+| Endpoint                 | Description                                           |
+| ------------------------ | ----------------------------------------------------- |
+| `GET /api/metrics`       | Main predictions: storm risk, SYM/H, flare, drag, SEP |
+| `GET /api/kp`            | Latest Kp index from NOAA                             |
+| `GET /api/series`        | Time series: SYM/H, Bz, solar wind speed              |
+| `GET /api/dst`           | Historical Dst observed vs predicted                  |
+| `GET /api/dst-forecast`  | 72-hour Dst forecast                                  |
+| `GET /api/dst-outlook`   | 30-day geomagnetic outlook                            |
+| `GET /api/solar-wind-ml` | 7-day ML solar wind forecast                          |
+| `GET /api/enlil`         | WSA-Enlil 4-day physics forecast                      |
+| `GET /api/cme`           | Latest CME event + impact prediction                  |
+| `GET /api/cme-climo`     | CME climatology by month                              |
+| `GET /api/cme-scenario`  | Custom CME scenario predictor                         |
+| `GET /api/alerts`        | Live NOAA space weather alerts                        |
+| `GET /api/aurora`        | Aurora nowcast + forecast                             |
+| `GET /api/satellites`    | Satellite preset configurations                       |
+| `GET /api/health`        | System health, uptime, data quality                   |
 
 ---
 
@@ -298,36 +309,36 @@ The live web dashboard includes:
 
 ## 12. Key Results & Capabilities
 
-| Capability | Value |
-|---|---|
-| Forecast horizon (storm) | 15 minutes |
-| Forecast horizon (Dst) | 72 hours |
-| Forecast horizon (drag) | 3 hours |
-| Forecast horizon (satellite impact) | 6 hours |
-| Long-range outlook | 30 days |
-| Training data span | 30 years (1995–2025) |
-| Inference latency | < 10 milliseconds |
-| Data refresh rate | Every 1 minute (live) |
-| Model cache TTL | Configurable (default ~60 sec) |
-| Runs without GPU | Yes — tree models only |
-| Satellite configurations | 5 presets + fully custom |
+| Capability                          | Value                          |
+| ----------------------------------- | ------------------------------ |
+| Forecast horizon (storm)            | 15 minutes                     |
+| Forecast horizon (Dst)              | 72 hours                       |
+| Forecast horizon (drag)             | 3 hours                        |
+| Forecast horizon (satellite impact) | 6 hours                        |
+| Long-range outlook                  | 30 days                        |
+| Training data span                  | 30 years (1995–2025)           |
+| Inference latency                   | < 10 milliseconds              |
+| Data refresh rate                   | Every 1 minute (live)          |
+| Model cache TTL                     | Configurable (default ~60 sec) |
+| Runs without GPU                    | Yes — tree models only         |
+| Satellite configurations            | 5 presets + fully custom       |
 
 ---
 
 ## 13. Comparison with NASA/IBM Surya
 
-| Aspect | NASA/IBM Surya | This Project |
-|---|---|---|
-| Released | August 2025 | 2026 |
-| Input data | Solar imagery (SDO photos) | Solar wind in-situ sensor data |
-| Where it looks | At the Sun (source) | At Earth's doorstep (L1 point) |
-| Forecast horizon | 2 hours (flares), 4 days (wind) | 15 min – 30 days (multi-model) |
-| Architecture | Spatiotemporal transformer (foundation model) | LightGBM + LSTM ensemble |
-| Compute needed | Large GPU cluster | Single CPU server |
-| Satellite-specific outputs | No | Yes (drag, anomaly per satellite) |
-| Operational dashboard | No (research model) | Yes (full live web UI) |
-| Deployment | Research / HuggingFace | Self-hosted / Vercel |
-| Complementary role | Early warning (days ahead) | Last-mile alarm (minutes ahead) |
+| Aspect                     | NASA/IBM Surya                                | This Project                      |
+| -------------------------- | --------------------------------------------- | --------------------------------- |
+| Released                   | August 2025                                   | 2026                              |
+| Input data                 | Solar imagery (SDO photos)                    | Solar wind in-situ sensor data    |
+| Where it looks             | At the Sun (source)                           | At Earth's doorstep (L1 point)    |
+| Forecast horizon           | 2 hours (flares), 4 days (wind)               | 15 min – 30 days (multi-model)    |
+| Architecture               | Spatiotemporal transformer (foundation model) | LightGBM + LSTM ensemble          |
+| Compute needed             | Large GPU cluster                             | Single CPU server                 |
+| Satellite-specific outputs | No                                            | Yes (drag, anomaly per satellite) |
+| Operational dashboard      | No (research model)                           | Yes (full live web UI)            |
+| Deployment                 | Research / HuggingFace                        | Self-hosted / Vercel              |
+| Complementary role         | Early warning (days ahead)                    | Last-mile alarm (minutes ahead)   |
 
 Both models are complementary. Surya watches the Sun and gives days of warning. This project watches the solar wind arriving at Earth and gives the precise 15-minute operational alarm.
 
@@ -361,6 +372,6 @@ Space Weather Sentinel is a complete, production-ready space weather forecasting
 
 ---
 
-*Report generated: June 2026*
-*Project: Space Weather Sentinel*
-*Data: NASA OMNI, NOAA SWPC, Kyoto WDC, NCEI*
+_Report generated: June 2026_
+_Project: Space Weather Sentinel_
+_Data: NASA OMNI, NOAA SWPC, Kyoto WDC, NCEI_
