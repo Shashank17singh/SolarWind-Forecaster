@@ -6,6 +6,7 @@ from src.feature_engineering import FEATURE_COLS, add_rolling_features
 
 
 def make_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Generates base and rolling features for the inference dataset."""
     df = df.sort_values("time").set_index("time")
     base = df[FEATURE_COLS].copy()
     feat_15 = add_rolling_features(df, window=15, prefix="w15")
@@ -15,6 +16,7 @@ def make_features(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _prepare_input(bundle: dict, latest: pd.DataFrame):
+    """Prepares the input features for a model by applying scaling if available."""
     features = bundle["features"]
     X = latest[features]
     scaler = bundle.get("scaler")
@@ -26,6 +28,7 @@ def _prepare_input(bundle: dict, latest: pd.DataFrame):
 
 
 def _predict_proba(bundle, X):
+    """Returns the probability prediction from a model, applying calibration if present."""
     model = bundle["model"]
     if hasattr(model, "predict_proba"):
         probs = model.predict_proba(X)[:, 1]
@@ -38,10 +41,12 @@ def _predict_proba(bundle, X):
 
 
 def _predict_value(model, X):
+    """Returns the regression prediction from a model."""
     return model.predict(X)
 
 
 def predict(latest_csv: str, model_dir: str):
+    """Runs inference to forecast storm risk and SYM-H using pre-trained models."""
     df = pd.read_csv(latest_csv, parse_dates=["time"])
     features = make_features(df)
     latest = features.iloc[-1:]

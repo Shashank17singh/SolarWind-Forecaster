@@ -29,6 +29,7 @@ FEATURE_COLS = [
 
 
 def add_rolling_features(df: pd.DataFrame, window: int, prefix: str) -> pd.DataFrame:
+    """Computes rolling mean, std, min, max, and delta for features over a specified window."""
     roll = df[FEATURE_COLS].rolling(window=window, min_periods=max(3, window // 5))
     out = {}
     for col in FEATURE_COLS:
@@ -43,6 +44,7 @@ def add_rolling_features(df: pd.DataFrame, window: int, prefix: str) -> pd.DataF
 def label_flares(
     index: pd.DatetimeIndex, flare_events, horizon_min: int, class_filter=("M", "X")
 ) -> pd.Series:
+    """Creates a boolean series identifying periods preceding major solar flares."""
     times = index.values.astype("datetime64[ns]")
     labels = np.zeros(len(times), dtype=bool)
     for ev in flare_events:
@@ -65,6 +67,7 @@ def build_dataset(
     chunksize: int = 400000,
     skip_flare: bool = False,
 ) -> None:
+    """Builds the final ML dataset by joining OMNI data with rolling features and future labels."""
     usecols = ["time"] + FEATURE_COLS
     dtype = {col: "float32" for col in FEATURE_COLS}
 
