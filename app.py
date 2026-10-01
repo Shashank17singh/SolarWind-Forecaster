@@ -25,6 +25,7 @@ view_mode = st.sidebar.radio(
 
 @st.cache_data
 def load_data():
+    """Loads processed solar wind data from CSV, or generates mock data if not found."""
     try:
         df = pd.read_csv("data/processed/omni.csv", parse_dates=["timestamp"])
         return df

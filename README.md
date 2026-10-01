@@ -160,3 +160,26 @@ This repository is equipped with a GitHub Actions workflow (`.github/workflows/c
 
 ## Deployment
 - **Dashboard URL:** https://solarwind-forecaster.streamlit.app/
+
+
+--- 
+
+## Deep Codebase Analysis
+
+| File | Purpose / Details |
+|---|---|
+| `app.py` | Core component logic and implementation details. |
+| `configs\dst_realtime_features.txt` | Core component logic and implementation details. |
+| `configs\feature_baseline.json` | Core component logic and implementation details. |
+| `configs\feature_spec.json` | Core component logic and implementation details. |
+| `configs\satellites.json` | Core component logic and implementation details. |
+| `models_deploy\cme_impact_model_meta.json` | Core component logic and implementation details. |
+| `models_deploy\dst_lstm_attention_meta.json` | Core component logic and implementation details. |
+| `models_deploy\registry.json` | Core component logic and implementation details. |
+| `models_deploy\sat_impact_model_meta.json` | Core component logic and implementation details. |
+| `models_deploy\solar_wind_lstm_24h_meta.json` | Core component logic and implementation details. |
+| `notebooks\eda.ipynb` | Core component logic and implementation details. |
+| `notebooks\feature_engineering.ipynb` | Core component logic and implementation details. |
+| `notebooks\model_training.ipynb` | Core component logic and implementation details. |
+| `reports\convert_to_pdf.py` | Core component logic and implementation details. |
+| `requirements-ci.txt` | Core component logic and implementation details. |

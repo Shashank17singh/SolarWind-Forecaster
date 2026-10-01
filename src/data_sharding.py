@@ -6,6 +6,7 @@ import pandas as pd
 
 
 def _parse_ts(value: str | None, label: str) -> pd.Timestamp | None:
+    """Parses a timestamp string into a pd.Timestamp."""
     if value is None:
         return None
     ts = pd.to_datetime(value, errors="coerce")
@@ -15,6 +16,7 @@ def _parse_ts(value: str | None, label: str) -> pd.Timestamp | None:
 
 
 def _prepare_chunk(chunk: pd.DataFrame, numeric_cols: list[str]) -> pd.DataFrame:
+    """Prepares a chunk of data by converting time column to datetime and setting numeric types."""
     chunk = chunk[chunk["time"] != "time"].copy()
     chunk.loc[:, "time"] = pd.to_datetime(
         chunk["time"],
@@ -31,6 +33,7 @@ def _prepare_chunk(chunk: pd.DataFrame, numeric_cols: list[str]) -> pd.DataFrame
 def _write_part(
     df: pd.DataFrame, out_dir: Path, part_idx: int, compression: str
 ) -> int:
+    """Writes a DataFrame to a Parquet file in the specified directory."""
     if df.empty:
         return part_idx
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -49,6 +52,7 @@ def shard_dataset(
     end_date: str | None,
     compression: str,
 ):
+    """Shards a dataset CSV into train, val, and test subsets based on date ranges."""
     train_end_ts = _parse_ts(train_end, "--train-end")
     val_end_ts = _parse_ts(val_end, "--val-end")
     start_ts = _parse_ts(start_date, "--start-date")
