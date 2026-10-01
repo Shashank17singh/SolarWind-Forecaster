@@ -10,6 +10,77 @@ sys.path.append(os.path.abspath("."))
 
 st.set_page_config(page_title="SolarWind Forecaster", layout="wide")
 
+CUSTOM_CSS = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
+
+html, body, [class*="css"]  {
+    font-family: 'Fira Sans', sans-serif !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Fira Code', monospace !important;
+    color: #0EA5E9 !important;
+}
+
+.stApp {
+    background-color: #0B1120;
+    color: #F8FAFC;
+    background-image: radial-gradient(circle at 50% top, #0F172A 0%, #0B1120 100%);
+}
+
+[data-testid="stHeader"] {
+    background-color: rgba(11, 17, 32, 0.7) !important;
+    backdrop-filter: blur(10px);
+}
+
+/* Glassmorphism Containers */
+[data-testid="stExpander"], [data-testid="stVerticalBlock"] > div > div > div[data-testid="stContainer"] {
+    background-color: rgba(30, 41, 59, 0.5);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(14, 165, 233, 0.2);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    padding: 15px;
+}
+
+/* Sidebar */
+[data-testid="stSidebar"] {
+    background-color: rgba(15, 23, 42, 0.8) !important;
+    border-right: 1px solid rgba(14, 165, 233, 0.2);
+}
+
+/* Buttons */
+.stButton > button {
+    background-color: rgba(2, 132, 199, 0.8);
+    backdrop-filter: blur(10px);
+    color: #FFFFFF;
+    font-family: 'Fira Code', monospace;
+    font-weight: 600;
+    border: 1px solid #0EA5E9;
+    border-radius: 6px;
+    box-shadow: 0 0 10px rgba(14, 165, 233, 0.3);
+    transition: all 0.2s;
+}
+
+.stButton > button:hover {
+    background-color: #0EA5E9;
+    box-shadow: 0 0 15px rgba(14, 165, 233, 0.6);
+    transform: translateY(-2px);
+    color: #FFFFFF;
+}
+
+/* Accent for warnings/amber */
+.stAlert {
+    background-color: rgba(245, 158, 11, 0.1);
+    border: 1px solid #F59E0B;
+    color: #F8FAFC;
+}
+</style>
+"""
+st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
+
 st.title("SolarWind Forecaster: Geomagnetic Storm Forecaster")
 st.markdown("""
 This dashboard visualizes historical solar wind data and simulates our Gradient Boosting forecasting model. 
@@ -30,7 +101,6 @@ def load_data():
         df = pd.read_csv("data/processed/omni.csv", parse_dates=["timestamp"])
         return df
     except FileNotFoundError:
-        # Generate realistic mock data for portfolio demonstration if running on Streamlit Cloud
         dates = pd.date_range(end=pd.Timestamp.utcnow(), periods=2000, freq="1min")
         df = pd.DataFrame({
             "timestamp": dates,
@@ -38,7 +108,6 @@ def load_data():
             "bz_gsm": np.random.normal(0, 5, 2000),
             "speed": np.random.normal(450, 50, 2000)
         })
-        # Add a simulated storm
         df.loc[1500:1600, "sym_h"] = np.random.normal(-80, 10, 101)
         return df
 
