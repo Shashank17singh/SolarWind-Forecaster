@@ -1,3 +1,7 @@
+"""
+Trains Scikit-Learn Gradient Boosting models (classifier and regressor) on solar wind parquet shards.
+Applies Isotonic Regression calibration for probability estimates.
+"""
 import argparse
 import os
 from pathlib import Path
@@ -14,7 +18,6 @@ LABEL_COLS = {"storm_risk", "symh_future", "flare_mx_next_15m"}
 
 
 def _list_parquet_files(dir_path: str) -> list[Path]:
-    """Returns a sorted list of Parquet files in the specified directory."""
     path = Path(dir_path)
     if not path.exists():
         raise FileNotFoundError(f"Missing parquet directory: {dir_path}")
@@ -27,7 +30,6 @@ def _list_parquet_files(dir_path: str) -> list[Path]:
 def _load_sample_from_shards(
     files: list[Path], feature_cols: list[str], max_rows: int, seed: int
 ):
-    """Load a random sample of rows from parquet shards to fit in memory for scikit-learn."""
     dfs = []
     total_loaded = 0
     for path in files:
@@ -52,7 +54,6 @@ def _load_sample_from_shards(
 
 
 def _eval_classifier(model, X, y):
-    """Evaluates a classification model returning log loss and accuracy."""
     if len(y) == 0:
         return {"log_loss": float("nan"), "accuracy": float("nan")}
 
@@ -67,7 +68,6 @@ def _eval_classifier(model, X, y):
 
 
 def _eval_regressor(model, X, y):
-    """Evaluates a regression model returning MAE and RMSE."""
     if len(y) == 0:
         return {"mae": float("nan"), "rmse": float("nan")}
     pred = model.predict(X)
@@ -83,7 +83,6 @@ def train_gradient_boosting(
     max_eval_rows: int,
     seed: int,
 ):
-    """Trains Gradient Boosting models for storm risk and SYM-H prediction on sharded data."""
     train_files = _list_parquet_files(os.path.join(parquet_dir, "train"))
     val_files = _list_parquet_files(os.path.join(parquet_dir, "val"))
     test_files = _list_parquet_files(os.path.join(parquet_dir, "test"))

@@ -1,3 +1,8 @@
+"""
+Streamlit dashboard for visualizing solar wind data and predicting geomagnetic storms.
+Provides data exploration features and a live forecasting view.
+Architecture note: Serves as the UI layer calling into the pre-trained models via `src.model_inference`.
+"""
 import os
 import sys
 

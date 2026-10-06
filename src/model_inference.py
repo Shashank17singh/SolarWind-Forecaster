@@ -1,3 +1,7 @@
+"""
+Model inference script for real-time space weather forecasting.
+Takes the latest solar wind observation, computes features, and predicts storm and flare probabilities.
+"""
 import argparse
 
 import joblib
@@ -18,37 +22,21 @@ def make_features(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _prepare_input(bundle: dict, latest: pd.DataFrame):
-    """Prepares the input features for a model by applying scaling if available."""
-    features = bundle["features"]
-    X = latest[features]
-    scaler = bundle.get("scaler")
-    if scaler is None:
-        return X
-    X = X.fillna(0.0)
-    X = X.to_numpy(dtype=np.float32)
-    return scaler.transform(X)
+    X = latest[bundle["features"]].fillna(0.0).to_numpy(dtype=np.float32)
+    return bundle["scaler"].transform(X) if bundle.get("scaler") else X
 
 
 def _predict_proba(bundle, X):
-    """Returns the probability prediction from a model, applying calibration if present."""
     model = bundle["model"]
-    if hasattr(model, "predict_proba"):
-        probs = model.predict_proba(X)[:, 1]
-    else:
-        probs = model.predict(X)
-    calibrator = bundle.get("calibrator")
-    if calibrator is not None:
-        probs = calibrator.predict(probs)
-    return probs
+    probs = model.predict_proba(X)[:, 1] if hasattr(model, "predict_proba") else model.predict(X)
+    return bundle["calibrator"].predict(probs) if bundle.get("calibrator") else probs
 
 
 def _predict_value(model, X):
-    """Returns the regression prediction from a model."""
     return model.predict(X)
 
 
 def predict(latest_csv: str, model_dir: str):
-    """Runs inference to forecast storm risk and SYM-H using pre-trained models."""
     df = pd.read_csv(latest_csv, parse_dates=["time"])
     features = make_features(df)
     latest = features.iloc[-1:]
