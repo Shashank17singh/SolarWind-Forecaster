@@ -1,3 +1,7 @@
+"""
+Ingests 1-minute resolution OMNI solar wind data from fixed-width ASCII files.
+Handles parsing, missing value imputation, and formatting into a processed CSV dataset.
+"""
 import argparse
 import os
 
@@ -154,7 +158,6 @@ FLOAT_COLS = {
 
 
 def to_datetime(df: pd.DataFrame) -> pd.Series:
-    """Converts year, doy, hour, and minute columns to a single datetime Series."""
     year = df["year"].astype(int)
     doy = df["doy"].astype(int)
     hour = df["hour"].astype(int)
@@ -166,16 +169,12 @@ def to_datetime(df: pd.DataFrame) -> pd.Series:
 
 
 def clean_missing(df: pd.DataFrame) -> pd.DataFrame:
-    """Replaces known missing value placeholders with NaN."""
-    for col in df.columns:
-        if col in {"year", "doy", "hour", "minute", "imf_sc_id", "sw_sc_id"}:
-            continue
-        df[col] = df[col].replace(list(MISSING_VALUES), np.nan)
+    cols = [c for c in df.columns if c not in {"year", "doy", "hour", "minute", "imf_sc_id", "sw_sc_id"}]
+    df[cols] = df[cols].replace(list(MISSING_VALUES), np.nan)
     return df
 
 
 def parse_omni_files(input_dir: str, output_csv: str, chunksize: int = 500000) -> None:
-    """Parses OMNI ascii files into a consolidated CSV, handling missing values and dates."""
     files = sorted(
         f
         for f in os.listdir(input_dir)

@@ -1,9 +1,13 @@
+"""
+Feature engineering pipeline for space weather models.
+Computes rolling window aggregations and extracts future horizon labels for target predictions.
+"""
 import argparse
 import os
 
 import numpy as np
 import pandas as pd
-from flare_reports import load_flare_reports
+from src.experiments.flare_reports import load_flare_reports
 
 FEATURE_COLS = [
     "bx_gse",
@@ -30,22 +34,17 @@ FEATURE_COLS = [
 
 
 def add_rolling_features(df: pd.DataFrame, window: int, prefix: str) -> pd.DataFrame:
-    """Computes rolling mean, std, min, max, and delta for features over a specified window."""
     roll = df[FEATURE_COLS].rolling(window=window, min_periods=max(3, window // 5))
-    out = {}
-    for col in FEATURE_COLS:
-        out[f"{col}_{prefix}_mean"] = roll[col].mean()
-        out[f"{col}_{prefix}_std"] = roll[col].std()
-        out[f"{col}_{prefix}_min"] = roll[col].min()
-        out[f"{col}_{prefix}_max"] = roll[col].max()
-        out[f"{col}_{prefix}_delta"] = df[col] - df[col].shift(window)
-    return pd.DataFrame(out, index=df.index)
+    aggs = roll.agg(['mean', 'std', 'min', 'max'])
+    aggs.columns = [f"{col}_{prefix}_{stat}" for col, stat in aggs.columns]
+    deltas = df[FEATURE_COLS] - df[FEATURE_COLS].shift(window)
+    deltas.columns = [f"{col}_{prefix}_delta" for col in FEATURE_COLS]
+    return pd.concat([aggs, deltas], axis=1)
 
 
 def label_flares(
     index: pd.DatetimeIndex, flare_events, horizon_min: int, class_filter=("M", "X")
 ) -> pd.Series:
-    """Creates a boolean series identifying periods preceding major solar flares."""
     times = index.values.astype("datetime64[ns]")
     labels = np.zeros(len(times), dtype=bool)
     for ev in flare_events:
@@ -68,7 +67,6 @@ def build_dataset(
     chunksize: int = 400000,
     skip_flare: bool = False,
 ) -> None:
-    """Builds the final ML dataset by joining OMNI data with rolling features and future labels."""
     usecols = ["time"] + FEATURE_COLS
     dtype = {col: "float32" for col in FEATURE_COLS}
 
