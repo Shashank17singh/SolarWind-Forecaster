@@ -2,7 +2,7 @@
 
 # SolarWind-Forecaster
 
-**A data science pipeline and Scikit-learn Gradient Boosting model for 15-minute forecasting of geomagnetic storm risk using massive NASA/NOAA datasets.**
+**A data science pipeline and Scikit-learn Gradient Boosting model for 15-minute forecasting of geomagnetic storm risk from NASA/NOAA datasets.**
 
 [![Python](https://img.shields.io/badge/Python-3.x-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Scikit-learn](https://img.shields.io/badge/Scikit--learn-Gradient%20Boosting-F7931E?style=for-the-badge&logo=scikitlearn&logoColor=white)](https://scikit-learn.org/)
@@ -15,7 +15,7 @@
 
 ## Overview
 
-A time-series forecasting tool that predicts renewable energy generation from solar and wind sources. It uses rolling window features and lag variables to model temporal trends, surfaced through an interactive Streamlit dashboard.
+A time-series forecasting tool that predicts geomagnetic storm risk 15 minutes ahead from NASA and NOAA space weather data. It uses rolling window features and lag variables to model temporal trends, and shows the results in an interactive Streamlit dashboard.
 
 ---
 
@@ -58,7 +58,7 @@ graph TD
 
 | Stage                   | Description                                                                                                    |
 | ----------------------- | -------------------------------------------------------------------------------------------------------------- |
-| **Data Ingestion**      | Handles massive, highly-dimensional JSON and CSV dumps from standard government APIs (NASA/NOAA).              |
+| **Data Ingestion**      | Handles large, high-dimensional JSON and CSV dumps from government APIs (NASA/NOAA).              |
 | **Feature Engineering** | Generates overlapping rolling windows (e.g., 15-min, 60-min means/stds) to give the models historical context. |
 | **Model Training**      | Trains a Scikit-learn Gradient Boosting regressor on decades of processed solar wind telemetry data.           |
 | **Streamlit Dashboard** | Provides a modern, reactive interface to perform Exploratory Data Analysis (EDA) and run real-time inference.  |
@@ -150,11 +150,7 @@ The app will open automatically in your browser at `http://localhost:8501`.
 
 ## CI/CD Pipeline
 
-This repository is equipped with a GitHub Actions workflow (`.github/workflows/ci.yml`). Every push to the `main` branch triggers:
-
-1. **Formatting Checks**: Ensures compliance with `black` and `isort`.
-2. **Linting**: Runs `flake8` to catch syntax errors and undefined variables.
-3. **Unit Tests**: Executes the `pytest` suite inside the `tests/` directory.
+The GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push. Black, isort and flake8 report style issues without failing the build, and `pytest` runs the suite in `tests/`.
 
 ---
 
