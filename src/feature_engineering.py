@@ -7,6 +7,7 @@ import os
 
 import numpy as np
 import pandas as pd
+
 from src.experiments.flare_reports import load_flare_reports
 
 FEATURE_COLS = [
@@ -87,10 +88,8 @@ def build_dataset(
     prev_tail = None
     pending_index = None
     total_rows = 0
-    chunk_id = 0
 
-    for chunk in iterator:
-        chunk_id += 1
+    for chunk_id, chunk in enumerate(iterator, start=1):
         total_rows += len(chunk)
         print(f"[build] chunk {chunk_id} rows={len(chunk)} total={total_rows}")
         chunk = chunk.sort_values("time")

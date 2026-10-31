@@ -1,7 +1,7 @@
 import os
 import sys
 import tempfile
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src", "experiments"))
 
@@ -12,7 +12,7 @@ from data_quality import compute_quality
 def test_compute_quality_ok():
     with tempfile.TemporaryDirectory() as tmp:
         path = os.path.join(tmp, "omni.csv")
-        times = [datetime.utcnow() - timedelta(minutes=i) for i in range(5)][::-1]
+        times = [datetime.now(UTC).replace(tzinfo=None) - timedelta(minutes=i) for i in range(5)][::-1]
         df = pd.DataFrame(
             {
                 "time": times,

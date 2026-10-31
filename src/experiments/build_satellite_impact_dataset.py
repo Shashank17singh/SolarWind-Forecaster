@@ -36,8 +36,8 @@ def _load_goes_exis_events(xlsx_path: str) -> list[pd.Timestamp]:
 
 def _load_ncei_xls_events(xls_path: str) -> list[pd.Timestamp]:
     try:
-        pass
-    except Exception:
+        import xlrd  # noqa: F401
+    except ImportError:
         print(
             f"[impact] xlrd not available; cannot read {xls_path}. "
             "Install python3-xlrd or convert .xls to .xlsx.",
@@ -82,7 +82,7 @@ def _load_ncei_xls_events(xls_path: str) -> list[pd.Timestamp]:
                                     minute=minute,
                                 )
                             )
-                        except Exception:
+                        except (TypeError, ValueError):
                             events.append(date)
                     else:
                         events.append(
@@ -95,7 +95,7 @@ def _load_ncei_xls_events(xls_path: str) -> list[pd.Timestamp]:
                                 second=time.second,
                             )
                         )
-                except Exception:
+                except (TypeError, ValueError):
                     continue
         else:
             dates = pd.to_datetime(df[date_col], errors="coerce")

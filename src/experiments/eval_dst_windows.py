@@ -175,7 +175,7 @@ def evaluate(
             out_png = os.path.join(out_dir, f"dst_eval_{window.name}.png")
             fig.savefig(out_png, dpi=150)
             plt.close(fig)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             print(f"[eval] plot failed for {window.name}: {exc}")
 
         results.append(

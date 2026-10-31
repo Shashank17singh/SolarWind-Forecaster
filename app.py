@@ -143,7 +143,7 @@ if view_mode == "Data Exploration (EDA)":
         st.subheader("Recent Solar Wind Trends")
 
         recent_df = df.tail(1000).reset_index(
-            drop=True if df.index.name != "timestamp" else False
+            drop=df.index.name != "timestamp"
         )
         if "timestamp" not in recent_df.columns:
             recent_df = recent_df.reset_index()
@@ -192,7 +192,7 @@ elif view_mode == "Forecasting Dashboard":
             else:
                 st.info("Space weather is currently calm.")
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             st.error(f"Could not run forecasting model. Error: {e}")
             st.markdown(
                 "*Note: Have you trained the models using `src/model_training.py`?*"
