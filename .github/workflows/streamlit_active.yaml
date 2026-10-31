@@ -1,0 +1,26 @@
+name: Streamlit Active
+
+on:
+  schedule:
+    # Every 6 hours. Community Cloud can put an app to sleep after about 12 idle hours.
+    - cron: '20 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+jobs:
+  keep-active:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake the app if it is asleep
+        uses: gpenessot/streamlit-keep-alive@1640101c229364726a5f3adf78ad095c53ef2283
+        with:
+          app-urls: |
+            https://solarwind-forecaster.streamlit.app/
+
+      # GitHub disables scheduled workflows after 60 days without repository activity.
+      - name: Keep this schedule enabled
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method PUT "repos/${{ github.repository }}/actions/workflows/streamlit_active.yaml/enable"
