@@ -18,70 +18,147 @@ st.set_page_config(page_title="SolarWind Forecaster", layout="wide")
 
 CUSTOM_CSS = """
 <style>
+/* Hallmark · checked: 2026-10-31 · genre: modern-minimal (inferred)
+ * fixed: 21 tokens lifted, focus, motion and states added · structural: left for the owner, see the audit
+ * built: the project · redesign: polish · v2.0.0 */
+:root {
+  --color-teal-500: #0ea5e9;
+  --color-blue-800: #0b1120;
+  --color-white: #f8fafc;
+  --color-blue-800-2: #0f172a;
+  --color-blue-800-a70: rgba(11,17,32,0.7);
+  --color-blue-700-a50: rgba(30,41,59,0.5);
+  --color-teal-500-a20: rgba(14,165,233,0.2);
+  --color-black-a50: rgba(0,0,0,0.5);
+  --color-blue-800-a80: rgba(15,23,42,0.8);
+  --color-blue-500-a80: rgba(2,132,199,0.8);
+  --color-white-2: #ffffff;
+  --color-teal-500-a30: rgba(14,165,233,0.3);
+  --color-teal-500-a60: rgba(14,165,233,0.6);
+  --color-orange-400-a10: rgba(245,158,11,0.1);
+  --color-orange-400: #f59e0b;
+  --font-sans: 'Fira Sans', sans-serif !important;
+  --font-mono: 'Fira Code', monospace !important;
+}
+
+
 @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
 
 html, body, [class*="css"]  {
-    font-family: 'Fira Sans', sans-serif !important;
+    font-family: var(--font-sans);
 }
 
 h1, h2, h3, h4, h5, h6 {
-    font-family: 'Fira Code', monospace !important;
-    color: #0EA5E9 !important;
+    font-family: var(--font-mono);
+    color: var(--color-teal-500) !important;
 }
 
 .stApp {
-    background-color: #0B1120;
-    color: #F8FAFC;
-    background-image: radial-gradient(circle at 50% top, #0F172A 0%, #0B1120 100%);
+    background-color: var(--color-blue-800);
+    color: var(--color-white);
+    background-image: radial-gradient(circle at 50% top, var(--color-blue-800-2) 0%, var(--color-blue-800) 100%);
 }
 
 [data-testid="stHeader"] {
-    background-color: rgba(11, 17, 32, 0.7) !important;
+    background-color: var(--color-blue-800-a70) !important;
     backdrop-filter: blur(10px);
 }
 
 /* Glassmorphism Containers */
 [data-testid="stExpander"], [data-testid="stVerticalBlock"] > div > div > div[data-testid="stContainer"] {
-    background-color: rgba(30, 41, 59, 0.5);
+    background-color: var(--color-blue-700-a50);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(14, 165, 233, 0.2);
+    border: 1px solid var(--color-teal-500-a20);
     border-radius: 12px;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    box-shadow: 0 8px 32px 0 var(--color-black-a50);
     padding: 15px;
 }
 
 /* Sidebar */
 [data-testid="stSidebar"] {
-    background-color: rgba(15, 23, 42, 0.8) !important;
-    border-right: 1px solid rgba(14, 165, 233, 0.2);
+    background-color: var(--color-blue-800-a80) !important;
+    border-right: 1px solid var(--color-teal-500-a20);
 }
 
 /* Buttons */
 .stButton > button {
-    background-color: rgba(2, 132, 199, 0.8);
+    background-color: var(--color-blue-500-a80);
     backdrop-filter: blur(10px);
-    color: #FFFFFF;
-    font-family: 'Fira Code', monospace;
+    color: var(--color-white-2);
+    font-family: var(--font-mono);
     font-weight: 600;
-    border: 1px solid #0EA5E9;
+    border: 1px solid var(--color-teal-500);
     border-radius: 6px;
-    box-shadow: 0 0 10px rgba(14, 165, 233, 0.3);
-    transition: all 0.2s;
+    box-shadow: 0 0 10px var(--color-teal-500-a30);
+    transition: color 0.2s, background-color 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.2s, opacity 0.2s;
 }
 
 .stButton > button:hover {
-    background-color: #0EA5E9;
-    box-shadow: 0 0 15px rgba(14, 165, 233, 0.6);
+    background-color: var(--color-teal-500);
+    box-shadow: 0 0 15px var(--color-teal-500-a60);
     transform: translateY(-2px);
-    color: #FFFFFF;
+    color: var(--color-white-2);
 }
 
 /* Accent for warnings/amber */
 .stAlert {
-    background-color: rgba(245, 158, 11, 0.1);
-    border: 1px solid #F59E0B;
-    color: #F8FAFC;
+    background-color: var(--color-orange-400-a10);
+    border: 1px solid var(--color-orange-400);
+    color: var(--color-white);
+}
+
+/* Accessibility states added by the polish pass. */
+:root {
+  --focus-ring: #e2e8f0;
+  --disabled-fill: #2a2f3a;
+  --disabled-ink: #8b93a1;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  overflow-x: clip;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible + label {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: var(--disabled-fill);
+  color: var(--disabled-ink);
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 </style>
 """
