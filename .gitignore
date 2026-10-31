@@ -36,3 +36,6 @@ models_sgd/
 .DS_Store
 Thumbs.db
 .vscode/
+
+# Local AI assistant configuration
+.agents/
