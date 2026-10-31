@@ -121,17 +121,13 @@ def train_models(
         flush=True,
     )
 
-    y_storm = df["storm_risk"].astype("int8")
-    y_symh = df["symh_future"].astype("float32")
     flare_available = "flare_mx_next_15m" in df.columns
-    y_flare = df["flare_mx_next_15m"] if flare_available else None
 
     feature_cols = [
         c
         for c in df.columns
         if c not in {"storm_risk", "symh_future", "flare_mx_next_15m"}
     ]
-    X = df[feature_cols]
 
     train, val, test = time_split(df, train_end, val_end)
     print(

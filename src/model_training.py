@@ -172,12 +172,6 @@ def train_gradient_boosting(
             .astype("int8")
             .to_numpy()
         )
-        y_flare_test = (
-            pd.to_numeric(test_df["flare_mx_next_15m"], errors="coerce")
-            .fillna(0)
-            .astype("int8")
-            .to_numpy()
-        )
 
         print("[sklearn] Training Flare Risk Classifier...", flush=True)
         flare_model = GradientBoostingClassifier(
