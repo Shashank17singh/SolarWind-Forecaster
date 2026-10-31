@@ -48,7 +48,7 @@ while dt < end:
     year = dt.year
 
     vals = []
-    for h in range(24):
+    for _h in range(24):
         base = 150 + 60 * math.sin(doy / 365 * 2 * math.pi)
         dtc = round(base + random.gauss(0, 15), 2)
         vals.append(f"{dtc:8.2f}")

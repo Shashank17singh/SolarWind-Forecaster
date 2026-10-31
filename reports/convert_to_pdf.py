@@ -4,7 +4,7 @@ Convert research paper markdown files to PDF
 """
 import os
 import markdown
-from weasyprint import HTML, CSS
+from weasyprint import HTML
 from weasyprint.text.fonts import FontConfiguration
 
 def combine_markdown_files():
@@ -33,7 +33,7 @@ def markdown_to_html(md_content):
     )
     
     
-    full_html = f"""
+    full_html = """
     <!DOCTYPE html>
     <html>
     <head>
@@ -131,7 +131,7 @@ def markdown_to_html(md_content):
     </body>
     </html>
     """
-    return full_html
+    return full_html.replace("{html_content}", html_content)
 
 def main():
     print("Combining markdown files...")
@@ -153,7 +153,7 @@ def main():
         font_config=font_config
     )
     
-    print("✓ PDF created successfully: reports/research_paper_full.pdf")
+    print("PDF created successfully: reports/research_paper_full.pdf")
     
     
     size_mb = os.path.getsize('reports/research_paper_full.pdf') / (1024 * 1024)
