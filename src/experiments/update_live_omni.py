@@ -119,7 +119,7 @@ def _read_last_timestamp(csv_path: str) -> pd.Timestamp | None:
                             "utf-8", errors="ignore"
                         )
                         return pd.to_datetime(last_time, errors="coerce")
-                    except Exception:
+                    except Exception:  # noqa: BLE001
                         return None
         return None
 

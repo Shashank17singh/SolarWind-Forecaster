@@ -3,9 +3,11 @@
 Convert research paper markdown files to PDF
 """
 import os
+
 import markdown
 from weasyprint import HTML
 from weasyprint.text.fonts import FontConfiguration
+
 
 def combine_markdown_files():
     """Combine all research paper parts into one markdown"""

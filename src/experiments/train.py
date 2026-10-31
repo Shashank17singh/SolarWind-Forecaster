@@ -1,7 +1,7 @@
 import argparse
 import os
 import time
-from datetime import datetime
+from datetime import UTC, datetime
 
 import joblib
 import numpy as np
@@ -141,7 +141,7 @@ def train_models(
 
     os.makedirs(model_dir, exist_ok=True)
 
-    run_version = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    run_version = datetime.now(UTC).replace(tzinfo=None).strftime("%Y%m%d%H%M%S")
     base_meta = {
         "train_end": train_end,
         "val_end": val_end,

@@ -1,6 +1,6 @@
 import json
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 
 DEFAULT_REGISTRY = "models_deploy/registry.json"
 
@@ -31,7 +31,7 @@ def register_model(
         "name": name,
         "version": version,
         "artifact_path": artifact_path,
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(UTC).replace(tzinfo=None).isoformat(),
         "metrics": metrics or {},
         "metadata": metadata or {},
     }

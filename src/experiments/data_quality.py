@@ -1,7 +1,7 @@
 import json
 import os
 from collections import deque
-from datetime import datetime
+from datetime import UTC, datetime
 from io import StringIO
 
 import numpy as np
@@ -53,7 +53,7 @@ def compute_quality(csv_path: str, window_min: int | None = None) -> dict:
         }
 
     df = df.sort_values("time")
-    now = datetime.utcnow()
+    now = datetime.now(UTC).replace(tzinfo=None)
     last_ts = df["time"].max().to_pydatetime()
     stale_minutes = (now - last_ts).total_seconds() / 60.0
 
@@ -133,7 +133,7 @@ def build_baseline(csv_path: str, output_path: str, feature_cols: list[str]):
             continue
         stats[col] = {"mean": float(series.mean()), "std": float(series.std())}
     payload = {
-        "generated_at": datetime.utcnow().isoformat(),
+        "generated_at": datetime.now(UTC).replace(tzinfo=None).isoformat(),
         "feature_stats": stats,
         "rows": len(df),
     }

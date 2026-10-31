@@ -28,7 +28,7 @@ def evaluate(
         for c in df.columns
         if c not in {"storm_risk", "symh_future", "flare_mx_next_15m"}
     ]
-    train, val, test = time_split(df, train_end, val_end)
+    _train, val, test = time_split(df, train_end, val_end)
 
     storm_path = os.path.join(model_dir, "storm_model.joblib")
     symh_path = os.path.join(model_dir, "symh_model.joblib")

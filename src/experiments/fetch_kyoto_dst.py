@@ -65,7 +65,7 @@ def _collect_series(
     data = []
     for year in range(start_year, end_year + 1):
         for month in range(1, 13):
-            rows, url = _try_month(base, year, month, timeout)
+            rows, _url = _try_month(base, year, month, timeout)
             if rows:
                 data.extend((ts, val, label) for ts, val in rows)
 
