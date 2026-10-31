@@ -40,5 +40,5 @@ jobs:
         
     - name: Run unit tests
       run: |
-        pytest tests/ || true
+        pytest tests/
 
