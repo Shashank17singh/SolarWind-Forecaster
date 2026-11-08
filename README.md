@@ -1,17 +1,6 @@
-<div align="center">
+# SolarWind Forecaster
 
-# SolarWind-Forecaster
-
-**A data science pipeline and Scikit-learn Gradient Boosting model for 15-minute forecasting of geomagnetic storm risk from NASA/NOAA datasets.**
-
-[![Python](https://img.shields.io/badge/Python-3.x-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![Scikit-learn](https://img.shields.io/badge/Scikit--learn-Gradient%20Boosting-F7931E?style=for-the-badge&logo=scikitlearn&logoColor=white)](https://scikit-learn.org/)
-[![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io/)
-[![Pandas](https://img.shields.io/badge/Pandas-Data%20Analysis-150458?style=for-the-badge&logo=pandas&logoColor=white)](https://pandas.pydata.org/)
-
-</div>
-
----
+A data science pipeline and Scikit-learn Gradient Boosting model for 15-minute forecasting of geomagnetic storm risk from NASA/NOAA datasets.
 
 ## Overview
 
