@@ -38,7 +38,7 @@ def _rows_to_df(rows) -> pd.DataFrame:
         df = pd.DataFrame(rows)
 
         if "active" in df.columns:
-            active = df[df["active"] == True]
+            active = df[df["active"]]
             df = active if not active.empty else df
         if "time_tag" not in df.columns:
             raise ValueError("Expected time_tag column in upstream data")
