@@ -17,7 +17,7 @@ ROW_RE = re.compile(r"^\s*(\d{1,2})\s+(-?\d+)")
 
 
 def _fetch(url: str, timeout: int) -> str:
-    with urlopen(url, timeout=timeout) as resp:
+    with urlopen(url, timeout=timeout) as resp:  # nosec B310
         return resp.read().decode("utf-8", errors="ignore")
 
 

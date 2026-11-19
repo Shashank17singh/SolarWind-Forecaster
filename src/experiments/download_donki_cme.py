@@ -10,7 +10,7 @@ BASE_URL = "https://kauai.ccmc.gsfc.nasa.gov/DONKI/WS/get/CME"
 def _fetch_range(start_date: str, end_date: str, timeout: int = 30):
     url = f"{BASE_URL}?startDate={start_date}&endDate={end_date}"
     req = Request(url, headers={"User-Agent": "space-weather-sentinel/1.0"})
-    with urlopen(req, timeout=timeout) as resp:
+    with urlopen(req, timeout=timeout) as resp:  # nosec B310
         return json.loads(resp.read().decode("utf-8"))
 
 

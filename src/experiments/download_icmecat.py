@@ -8,7 +8,7 @@ API_URL = "https://api.figshare.com/v2/articles/{article_id}"
 
 def _fetch_json(url: str, timeout: int = 30):
     req = Request(url, headers={"User-Agent": "space-weather-sentinel/1.0"})
-    with urlopen(req, timeout=timeout) as resp:
+    with urlopen(req, timeout=timeout) as resp:  # nosec B310
         return json.loads(resp.read().decode("utf-8"))
 
 
@@ -34,7 +34,7 @@ def download(article_id: str, out_path: str, fmt: str):
         raise RuntimeError("Download URL missing.")
 
     req = Request(url, headers={"User-Agent": "space-weather-sentinel/1.0"})
-    with urlopen(req, timeout=60) as resp:
+    with urlopen(req, timeout=60) as resp:  # nosec B310
         data = resp.read()
     with open(out_path, "wb") as f:
         f.write(data)

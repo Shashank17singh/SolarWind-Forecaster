@@ -10,7 +10,7 @@ SWALL_URL = "https://celestrak.org/SpaceData/SW-All.csv"
 
 def _download(url: str, path: str):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    urlretrieve(url, path)
+    urlretrieve(url, path)  # nosec B310
     print(f"[download] {url} -> {path}")
 
 

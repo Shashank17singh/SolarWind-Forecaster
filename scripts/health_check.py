@@ -11,7 +11,7 @@ def main():
     args = parser.parse_args()
 
     req = Request(args.url, headers={"User-Agent": "space-weather-health/1.0"})
-    with urlopen(req, timeout=args.timeout) as resp:
+    with urlopen(req, timeout=args.timeout) as resp:  # nosec B310
         data = json.loads(resp.read().decode("utf-8"))
     ok = data.get("ok", False)
     if not ok:

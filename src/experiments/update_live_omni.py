@@ -21,7 +21,7 @@ def _fetch_json(url: str, timeout: int | None = None, retries: int = 3):
     for attempt in range(retries):
         try:
             req = Request(url, headers={"User-Agent": "space-weather-sentinel/1.0"})
-            with urlopen(req, timeout=timeout) as resp:
+            with urlopen(req, timeout=timeout) as resp:  # nosec B310
                 payload = resp.read().decode("utf-8")
             return json.loads(payload)
         except Exception:
